@@ -1,14 +1,13 @@
 import * as sourceMapSupport from 'source-map-support';
 sourceMapSupport.install();
 
-
 import * as yargs from 'yargs';
-
 
 function createPr(args) {
     console.log(JSON.stringify(args))
 }
 
+/* tslint:disable:no-shadowed-variable no-unused-expression */
 yargs
     .usage('<cmd> [options]')
     .version('1.0.0')
