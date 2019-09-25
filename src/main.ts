@@ -16,11 +16,11 @@ async function push(args) {
     const name = b.name
 
     const remoteName = `origin/${name}`
-    const remoteExists = label.startsWith(`[${remoteName}: `) || label.startsWith(`[${remoteName}] `)
-    let pushArgs = []
-    if (!remoteExists) {
-        pushArgs = ['--set-upstream', 'origin', name]
-    }
+    // const remoteExists = label.startsWith(`[${remoteName}: `) || label.startsWith(`[${remoteName}] `)
+    // let pushArgs = []
+    // if (!remoteExists) {
+    //     // pushArgs = ['--set-upstream', 'origin', name]
+    // }
 
     await git().push('origin', name)
 }
