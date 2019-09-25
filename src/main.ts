@@ -15,12 +15,14 @@ async function push(args) {
     const label = b.label
     const name = b.name
 
-    const prefix = `[origin/${name}`
-    if (label.startsWith(`${prefix}: `) || label.startsWith(`${prefix}] `)) {
-        console.log('remote exists')
-    } else {
-        console.log('remote does not exist')
+    const remoteName = `origin/${name}`
+    const remoteExists = label.startsWith(`[${remoteName}: `) || label.startsWith(`[${remoteName}] `)
+    let pushArgs = []
+    if (!remoteExists) {
+        pushArgs = ['--set-upstream', 'origin', name]
     }
+
+    await git().push('origin', name)
 }
 
 /* tslint:disable:no-shadowed-variable no-unused-expression */
