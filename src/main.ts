@@ -3,7 +3,7 @@ sourceMapSupport.install();
 
 import * as yargs from 'yargs';
 
-function createPr(args) {
+function createPr(args) {    
     console.log(JSON.stringify(args))
 }
 

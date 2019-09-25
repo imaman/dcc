@@ -15,7 +15,7 @@ export const logger = winston.createLogger({
               justMessageFormat)
         }),
         new winston.transports.File({
-            filename: '.bigband.log',
+            filename: '.dcc.log',
             options: {
               flags: 'w'
             },
