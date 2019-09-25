@@ -11,7 +11,16 @@ function createPr(args) {
 
 async function push(args) {
     const bs = await git().branch(["-vv"])
-    console.log('bs=' + JSON.stringify(bs, null, 2))
+    const b = bs.branches[bs.current]
+    const label = b.label
+    const name = b.name
+
+    const prefix = `[origin/${name}`
+    if (label.startsWith(`${prefix}: `) || label.startsWith(`${prefix}] `)) {
+        console.log('remote exists')
+    } else {
+        console.log('remote does not exist')
+    }
 }
 
 /* tslint:disable:no-shadowed-variable no-unused-expression */
