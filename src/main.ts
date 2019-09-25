@@ -19,10 +19,13 @@ async function push(args) {
     // const remoteExists = label.startsWith(`[${remoteName}: `) || label.startsWith(`[${remoteName}] `)
     // let pushArgs = []
     // if (!remoteExists) {
-    //     // pushArgs = ['--set-upstream', 'origin', name]
+    //     // pushArgs = 
     // }
 
-    await git().push('origin', name)
+    const inst = git()
+    // we need to by pass typechecking (incorrect signature of the .push() method), so we use .apply()
+    const temp = await inst.push.apply(inst, [['--set-upstream', 'origin', name]])
+    console.log(temp)
 }
 
 /* tslint:disable:no-shadowed-variable no-unused-expression */
