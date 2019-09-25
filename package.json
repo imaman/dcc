@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc",
+    "unit": "mocha -r ts-node/register --exit --timeout 50000 '__tests__/**/*.test.ts'"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +15,11 @@
     "yargs": "^14.0.0"
   },
   "devDependencies": {
+    "@types/mocha": "^5.2.7",
+    "@types/node": "^12.7.7",
+    "mocha": "^6.2.0",
+    "ts-node": "^8.4.1",
+    "tslint": "^5.20.0",
     "typescript": "^3.6.3"
   }
 }
