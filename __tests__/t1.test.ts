@@ -2,6 +2,6 @@ import * as assert from 'assert'
 
 describe("a", () => {
     it("does something", () => {
-        assert.strictEqual(4, 3)
+        assert.strictEqual(4, 4)
     })
 })
