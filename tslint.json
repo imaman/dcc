@@ -1,6 +1,7 @@
 {
     "extends": "tslint-config-sevenval",
     "rules": {
-        "no-console": false
+        "no-console": false,
+        "no-empty": false
     }
 }
