@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@octokit/rest": "^16.30.1",
     "simple-git": "^1.126.0",
     "source-map-support": "^0.5.13",
     "yargs": "^14.0.0"
