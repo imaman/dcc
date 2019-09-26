@@ -18,6 +18,11 @@ const octokit = (() => {
     }
 })()
 
+function stopMe(message: string) {
+    console.log(message)
+    process.exit(-1)
+}
+
 async function getUser() {
     const kit = octokit()
     const d = await kit.users.getAuthenticated()
@@ -28,7 +33,7 @@ async function getUser() {
 
 async function createPr(args) { 
     if (!args.title) {
-        throw new Error('Title must be specified')
+        stopMe('Title must be specified')
     }
 
     noUncommittedChanges()
@@ -85,7 +90,9 @@ async function getBranch() {
 
 async function noUncommittedChanges() {
     const d = await git().diffSummary()
-    console.log(JSON.stringify(d, null, 2))
+    if (d.files.length) {
+        stopMe('you have uncommitted changes')
+    }
 }
 
 async function getRepo() {
@@ -124,7 +131,8 @@ async function getRepo() {
 }
 
 async function push(args) {
-    noUncommittedChanges()
+    await noUncommittedChanges()
+
     const b = await getBranch()
 
     const inst = git()
