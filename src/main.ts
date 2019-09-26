@@ -38,6 +38,8 @@ async function createPr(args) {
 
     noUncommittedChanges()
 
+    push()
+
     const b = await getBranch()
     const r = await getRepo()
     const kit = octokit()
@@ -130,7 +132,7 @@ async function getRepo() {
     return repos[0]
 }
 
-async function push(args) {
+async function push() {
     await noUncommittedChanges()
 
     const b = await getBranch()
