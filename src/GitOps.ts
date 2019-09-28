@@ -9,6 +9,16 @@ export class GitOps {
 
     constructor(private readonly git: SimpleGit) {}
 
+    async describeCommit(sha: string) {
+        const log = await this.git.log()
+        const index = log.all.findIndex(curr => curr.hash === sha)
+        if (index < 0) {
+            return undefined
+        }
+
+        return {ordinal: index, data: log.all[index]}
+    }
+
     async getBranch() {
         const bs = await this.git.branch(["-vv"])
         return bs.branches[bs.current]

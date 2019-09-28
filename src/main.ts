@@ -47,14 +47,41 @@ async function push() {
 async function createPr(args) {
     await githubOps.createPr(args.title)
 }
+
+async function info() {
+    const o = await githubOps.listChecks()
+
+    console.log('HEAD' + (Boolean(o.commit.ordinal) ? `~${o.commit.ordinal}` : ''))
+    console.log(o.commit.data.hash)
+    console.log(o.commit.data.message.substr(0, 60))
+
+    console.log()
+    const notPassingRequired = o.statuses.filter(curr => curr.required).filter(curr => curr.state !== 'success')
+    console.log(`Required checks pass? ${notPassingRequired.length ? 'no' : 'YES'}`)
+
+    if (notPassingRequired.length) {
+        for (const curr of notPassingRequired) {
+            console.log('  ' + curr.context + '? ' + curr.state)
+        }
+    }
+
+    console.log()
+    const notPassingOptional = o.statuses.filter(curr => !curr.required).filter(curr => curr.state !== 'success')
+    console.log(`Optional checks pass? ${notPassingOptional.length ? 'no' : 'YES'}`)
+    if (notPassingOptional.length) {
+        for (const curr of notPassingOptional) {
+            console.log('  ' + curr.context + '? ' + curr.state)
+        }
+    }
+}
+
 /* tslint:disable:no-shadowed-variable no-unused-expression */
 yargs
     .usage('<cmd> [options]')
     .version('1.0.0')
     .strict()
-    .command('push', 'push your branch', yargs => {
-        // blah blah blah
-    }, push)
+    .command('info', 'CI details', yargs => {}, info)
+    .command('push', 'push your branch', yargs => {}, push)
     .command('prs', 'List currently open PRs', yargs => {}, listPrs)
     .command('merged', 'List recently merged PRs', yargs => {
         yargs.option('user', {
@@ -64,18 +91,12 @@ yargs
         });
     }, listMerged)
     .command('pr [options]', 'Creates a PR', yargs => {
-        // specFileAndSectionOptions(yargs);
         yargs.option('title', {
             alias: 't',
             describe: 'A one line summary of this PR',
             type: 'string'
         });
-        // yargs.option('deploy-mode', {
-        //     choices: ['ALWAYS', 'IF_CHANGED'],
-        //     describe: 'When should lambda instruments be deployed',
-        //     default: 'IF_CHANGED'
-        // });
     }, createPr)
     .help()
-    .showHelpOnFail(false, "Specify --help for available options")
+    .showHelpOnFail(true, "Specify --help for available options")
     .argv;

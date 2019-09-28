@@ -42,9 +42,41 @@ export class GithubOps {
         return prs.filter(curr => curr.user === user)    
     }
 
+    async listChecks() {
+        const r = await this.gitOps.getRepo()
+        const b = await this.gitOps.getBranch()
+        const statusPromise = this.kit.repos.getCombinedStatusForRef({
+            owner: r.owner,
+            repo: r.name,
+            ref: b.name
+          })        
+
+        const branchPromise = await this.kit.repos.getBranch({
+            owner: r.owner,
+            repo: r.name,
+            branch: 'master'
+          })
+
+        const [status, branch] = await Promise.all([statusPromise, branchPromise])
+        const required = new Set<string>(branch.data.protection.required_status_checks.contexts)
+        const statuses = status.data.statuses.map(s => ({
+                context: s.context, 
+                required: required.has(s.context),
+                state: s.state, 
+                createdAt: s.created_at,
+                updatedAt: s.updated_at,
+            }))
+
+        const d = await this.gitOps.describeCommit(status.data.sha)
+        if (!d) {
+            throw new Error(`Could not find sha ${status.data.sha} in git log`)
+        }
+
+        return {statuses, state: status.data.state, sha: status.data.sha, commit: d}
+    }
+
     async listMerged(user?: string) {
-        const arr = await Promise.all([this.gitOps.getRepo()])
-        const r = arr[0]
+        const r = await this.gitOps.getRepo()
     
         const pageSize = user ? 100 : 40
         const req: Octokit.PullsListParams = {
