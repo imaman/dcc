@@ -11,13 +11,11 @@ export class GithubOps {
     }
     
     async listPrs() {
-        const arr = await Promise.all([this.gitOps.getRepo(), this.getUser()])
-        const r = arr[0]
-        const user = arr[1]
+        const [repo, user] = await Promise.all([this.gitOps.getRepo(), this.getUser()])
     
         const req: Octokit.PullsListParams = {
-            owner: r.owner,
-            repo: r.name,
+            owner: repo.owner,
+            repo: repo.name,
             state: 'open',
             sort: 'updated',
             direction: 'desc'
@@ -26,7 +24,7 @@ export class GithubOps {
         const prs = resp.data.map(curr => ({
                 user: curr.user.login, 
                 title: curr.title, 
-                url: `https://github.com/${r.owner}/${r.name}/pull/${curr.number}`,
+                url: `https://github.com/${repo.owner}/${repo.name}/pull/${curr.number}`,
                 body: curr.body,
                 branch: curr.head.ref,
                 updatedAt: curr.updated_at,
@@ -40,6 +38,10 @@ export class GithubOps {
         prs.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     
         return prs.filter(curr => curr.user === user)    
+    }
+
+    getCurrentPr() {
+
     }
 
     async listChecks() {
