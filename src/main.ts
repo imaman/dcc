@@ -25,6 +25,15 @@ function format(s: string, n: number) {
     return s.padEnd(n)
 }
 
+function launch(f: (a: any) => Promise<void>) {
+    return (args: any) => {
+        if (args.dir) {
+            process.chdir(args.dir)
+        }
+        return f(args)
+    }
+}
+
 async function listPrs() { 
     const d = await githubOps.listPrs()
     for (const curr of d) {
@@ -80,23 +89,28 @@ yargs
     .usage('<cmd> [options]')
     .version('1.0.0')
     .strict()
-    .command('info', 'CI details', yargs => {}, info)
-    .command('push', 'push your branch', yargs => {}, push)
-    .command('prs', 'List currently open PRs', yargs => {}, listPrs)
+    .option('dir', {
+        alias: 'd',
+        describe: 'directroy to run at',
+        type: 'string'
+    })
+    .command('info', 'CI details', yargs => {}, launch(info))
+    .command('push', 'push your branch', yargs => {}, launch(push))
+    .command('prs', 'List currently open PRs', yargs => {}, launch(listPrs))
     .command('merged', 'List recently merged PRs', yargs => {
         yargs.option('user', {
             alias: 'u',
             describe: 'Shows only PR from that GitHub user ID. If omiited shows from all users.',
             type: 'string'
         });
-    }, listMerged)
+    }, launch(listMerged))
     .command('pr [options]', 'Creates a PR', yargs => {
         yargs.option('title', {
             alias: 't',
             describe: 'A one line summary of this PR',
             type: 'string'
         });
-    }, createPr)
+    }, launch(createPr))
     .help()
     .showHelpOnFail(true, "Specify --help for available options")
     .argv;
