@@ -13,29 +13,32 @@ export class GithubOps {
     async listPrs() {
         const [repo, user] = await Promise.all([this.gitOps.getRepo(), this.getUser()])
     
-        const req: Octokit.PullsListParams = {
-            owner: repo.owner,
-            repo: repo.name,
-            state: 'open',
-            sort: 'updated',
-            direction: 'desc'
-        }
-        const resp = await this.kit.pulls.list(req)
-        const prs = resp.data.map(curr => ({
+        // const req: Octokit.PullsListParams = {
+        //     owner: repo.owner,
+        //     repo: repo.name,
+        //     state: 'open',
+        //     sort: 'updated',
+        //     direction: 'desc'
+        // }
+        // const resp = await this.kit.pulls.list(req)
+
+        const respB = await this.kit.search.issuesAndPullRequests({
+            q: `type:pr	author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`,
+        })
+        // console.log('resp=\n'+ JSON.stringify(respB, null, 2))
+        // process.exit(-1)
+        const prs = respB.data.items.map(curr => ({
                 user: curr.user.login, 
                 title: curr.title, 
                 url: `https://github.com/${repo.owner}/${repo.name}/pull/${curr.number}`,
                 body: curr.body,
-                branch: curr.head.ref,
+                // branch: curr.head.ref,
                 updatedAt: curr.updated_at,
                 createdAt: curr.created_at,
-                mergedAt: curr.merged_at,
-                // closedAt: curr.closed_at,
+                // mergedAt: curr.merged_at,
                 number: curr.number,
                 state: curr.state
             }))
-    
-        prs.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     
         return prs.filter(curr => curr.user === user)    
     }
