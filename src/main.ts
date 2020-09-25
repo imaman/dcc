@@ -60,9 +60,10 @@ async function createPr(args) {
 async function info() {
     const o = await githubOps.listChecks()
 
-    console.log('HEAD' + (Boolean(o.commit.ordinal) ? `~${o.commit.ordinal}` : ''))
-    console.log(o.commit.data.hash)
-    console.log(o.commit.data.message.substr(0, 60))
+    console.log(process.cwd())
+    console.log('Pushed: HEAD' + (Boolean(o.commit.ordinal) ? `~${o.commit.ordinal}` : ''))
+    console.log('Commit: ' + o.commit.data.hash)
+    console.log('Message: ' + o.commit.data.message.substr(0, 60))
 
     console.log()
     const notPassingRequired = o.statuses.filter(curr => curr.required).filter(curr => curr.state !== 'success')
