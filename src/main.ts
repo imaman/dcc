@@ -113,5 +113,5 @@ yargs
         });
     }, launch(createPr))
     .help()
-    .showHelpOnFail(true, "Specify --help for available options")
+    .showHelpOnFail(false, "Specify --help for available options")
     .argv;

@@ -130,7 +130,22 @@ export class GithubOps {
             repo: r.name,
             title
         }
-        const resp = await this.kit.pulls.create(req)
-        console.log(JSON.stringify(resp))
+        try {
+          const resp = await this.kit.pulls.create(req)
+          console.log(`PR #${resp.data.number} created`)
+          console.log(resp.data.html_url)
+        } catch (err) {
+          const x = err as any
+          // tslint:disable-next-line
+          const errors = [...x['errors']]
+          // tslint:disable-next-line
+          const alreadyExist = Boolean(errors.find(e => e['resource'] === 'PullRequest' && String(e['message']).includes('A pull request already exists')))
+          if (!alreadyExist) {
+            throw new Error(`Failed to create PR\n${JSON.stringify(x, null, 2)}`)            
+          }
+
+          console.log('PR already exists')
+        }
+          
     }    
 }

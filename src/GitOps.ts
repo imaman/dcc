@@ -1,4 +1,5 @@
 import { SimpleGit } from 'simple-git/promise'
+import * as child_process from 'child_process'
 
 function stopMe(message: string) {
     console.log(message)
@@ -32,14 +33,14 @@ export class GitOps {
     }
     
     async push() {
-        await this.noUncommittedChanges()
-    
+        await this.noUncommittedChanges()    
         const b = await this.getBranch()
     
-        // we need to by pass typechecking (incorrect signature of the .push() method), so we use .apply()
-        const temp = await this.git.push.apply(this.git, [['--set-upstream', 'origin', b.name]])
-        console.log(temp)
-    }    
+        const temp = child_process.spawnSync('git', ['push', '--set-upstream', 'origin', b.name], {stdio: 'inherit'})
+        if (temp.status !== 0) {
+          throw new Error(`exit code (git push) is ${temp.status}`)
+        }
+    } 
 
     async getRepo() {
         const r = await this.git.remote(['-v'])
@@ -53,11 +54,9 @@ export class GitOps {
             .map(s => ({owner: s[0], name: s[1]}))
     
         for (const curr of repos) {
-            if (!curr.name.endsWith('.git')) {
-                throw new Error(`Repo reference should end with .git (but found: ${curr.name})`)
+            if (curr.name.endsWith('.git')) {
+              curr.name = curr.name.substr(0, curr.name.length - 4)
             }
-    
-            curr.name = curr.name.substr(0, curr.name.length - 4)
         }
     
         if (!repos.length) {
