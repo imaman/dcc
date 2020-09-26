@@ -65,7 +65,26 @@ export class GithubOps {
     return prs.filter(curr => curr.user === user)
   }
 
-  getCurrentPr(): void {}
+  async getCurrentPr(): Promise<PrInfo[]> {
+    const b = await this.gitOps.getBranch()
+    const [repo, user] = await Promise.all([this.gitOps.getRepo(), this.getUser()])
+
+    const respB = await this.kit.search.issuesAndPullRequests({
+      q: `type:pr	head:${b} author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`,
+    })
+    const prs = respB.data.items.map(curr => ({
+      user: curr.user.login,
+      title: curr.title,
+      url: `https://github.com/${repo.owner}/${repo.name}/pull/${curr.number}`,
+      body: curr.body,
+      updatedAt: curr.updated_at,
+      createdAt: curr.created_at,
+      number: curr.number,
+      state: curr.state,
+    }))
+
+    return prs.filter(curr => curr.user === user)
+  }
 
   async listChecks(): Promise<CheckInfo> {
     const r = await this.gitOps.getRepo()

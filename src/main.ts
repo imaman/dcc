@@ -50,6 +50,18 @@ async function listPrs() {
   }
 }
 
+/* eslint-disable no-console */
+async function mergePr() {
+  const d = await githubOps.listPrs()
+  for (const curr of d) {
+    console.log(
+      `${curr.updatedAt} ${('#' + curr.number).padStart(6)} ${format(curr.user, 10)} ${format(curr.title, 60)} ${
+        curr.url
+      }`,
+    )
+  }
+}
+
 async function listMerged(args: Arguments) {
   const d = await githubOps.listMerged(args.user)
 
@@ -71,31 +83,34 @@ async function createPr(args: Arguments) {
 }
 
 async function info() {
-  const o = await githubOps.listChecks()
+  const x = await githubOps.getCurrentPr()
+  console.log(`x=${JSON.stringify(x, null, 2)}`)
 
-  console.log(process.cwd())
-  console.log('Pushed: HEAD' + (o.commit.ordinal ? `~${o.commit.ordinal}` : ''))
-  console.log('Commit: ' + o.commit.data.hash)
-  console.log('Message: ' + o.commit.data.message.substr(0, 60))
+  // const o = await githubOps.listChecks()
 
-  console.log()
-  const notPassingRequired = o.statuses.filter(curr => curr.required).filter(curr => curr.state !== 'success')
-  console.log(`Required checks pass? ${notPassingRequired.length ? 'no' : 'YES'}`)
+  // console.log(process.cwd())
+  // console.log('Pushed: HEAD' + (o.commit.ordinal ? `~${o.commit.ordinal}` : ''))
+  // console.log('Commit: ' + o.commit.data.hash)
+  // console.log('Message: ' + o.commit.data.message.substr(0, 60))
 
-  if (notPassingRequired.length) {
-    for (const curr of notPassingRequired) {
-      console.log('  ' + curr.context + '? ' + curr.state)
-    }
-  }
+  // console.log()
+  // const notPassingRequired = o.statuses.filter(curr => curr.required).filter(curr => curr.state !== 'success')
+  // console.log(`Required checks pass? ${notPassingRequired.length ? 'no' : 'YES'}`)
 
-  console.log()
-  const notPassingOptional = o.statuses.filter(curr => !curr.required).filter(curr => curr.state !== 'success')
-  console.log(`Optional checks pass? ${notPassingOptional.length ? 'no' : 'YES'}`)
-  if (notPassingOptional.length) {
-    for (const curr of notPassingOptional) {
-      console.log('  ' + curr.context + '? ' + curr.state)
-    }
-  }
+  // if (notPassingRequired.length) {
+  //   for (const curr of notPassingRequired) {
+  //     console.log('  ' + curr.context + '? ' + curr.state)
+  //   }
+  // }
+
+  // console.log()
+  // const notPassingOptional = o.statuses.filter(curr => !curr.required).filter(curr => curr.state !== 'success')
+  // console.log(`Optional checks pass? ${notPassingOptional.length ? 'no' : 'YES'}`)
+  // if (notPassingOptional.length) {
+  //   for (const curr of notPassingOptional) {
+  //     console.log('  ' + curr.context + '? ' + curr.state)
+  //   }
+  // }
 }
 
 /* tslint:disable:no-shadowed-variable no-unused-expression */
@@ -111,8 +126,9 @@ yargs
   .command('info', 'CI details', a => a, launch(info))
   .command('push', 'push your branch', a => a, launch(push))
   .command('prs', 'List currently open PRs', a => a, launch(listPrs))
+  .command('merge', 'Merge the current PR', a => a, launch(mergePr))
   .command(
-    'merged',
+    'prs-recent',
     'List recently merged PRs',
     yargs =>
       yargs.option('user', {
