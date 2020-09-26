@@ -4,12 +4,12 @@ import * as Octokit from '@octokit/rest'
 export class GithubOps {
   constructor(private readonly kit: Octokit, private readonly gitOps: GitOps) {}
 
-  async getUser() {
+  async getUser(): Promise<string> {
     const d = await this.kit.users.getAuthenticated()
     return d.data.login
   }
 
-  async listPrs() {
+  async listPrs(): Promise<void> {
     const [repo, user] = await Promise.all([this.gitOps.getRepo(), this.getUser()])
 
     // const req: Octokit.PullsListParams = {
@@ -42,9 +42,9 @@ export class GithubOps {
     return prs.filter(curr => curr.user === user)
   }
 
-  getCurrentPr() {}
+  getCurrentPr(): void {}
 
-  async listChecks() {
+  async listChecks(): Promise<void> {
     const r = await this.gitOps.getRepo()
     const b = await this.gitOps.getBranch()
     const statusPromise = this.kit.repos.getCombinedStatusForRef({
@@ -77,7 +77,7 @@ export class GithubOps {
     return { statuses, state: status.data.state, sha: status.data.sha, commit: d }
   }
 
-  async listMerged(user?: string) {
+  async listMerged(user?: string): Promise<void> {
     const r = await this.gitOps.getRepo()
 
     const pageSize = user ? 100 : 40
@@ -113,7 +113,7 @@ export class GithubOps {
     return prs
   }
 
-  async createPr(title: string) {
+  async createPr(title: string): Promise<void> {
     this.gitOps.noUncommittedChanges()
     this.gitOps.push()
 
@@ -132,10 +132,9 @@ export class GithubOps {
       // eslint-disable-next-line no-console
       console.log(`PR #${resp.data.number} created\n${resp.data.html_url}`)
     } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const x = err as any
-      // tslint:disable-next-line
       const errors = [...x['errors']]
-      // tslint:disable-next-line
       const alreadyExist = Boolean(
         errors.find(
           e => e['resource'] === 'PullRequest' && String(e['message']).includes('A pull request already exists'),
