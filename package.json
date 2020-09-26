@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint --max-warnings 0 'modules/*/**/*.{ts,js,json,d.ts}'",
     "build": "tsc",
-    "unit": "mocha -r ts-node/register --exit --timeout 50000 '__tests__/**/*.test.ts'"
+    "test": "mocha -r ts-node/register --exit --timeout 50000 '__tests__/**/*.test.ts'"
   },
   "husky": {
     "hooks": {
