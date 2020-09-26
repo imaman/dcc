@@ -1,6 +1,42 @@
 import { GitOps } from './GitOps'
 import * as Octokit from '@octokit/rest'
 
+interface PrInfo {
+  url: string
+  updatedAt: string
+  number: number
+  user: string
+  title: string
+}
+
+interface CheckStatusInfo {
+  context: string
+  required: boolean
+  state: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface CheckCommitInfo {
+  ordinal: number
+  data: { hash: string; message: string }
+}
+
+interface CheckInfo {
+  statuses: CheckStatusInfo[]
+  state: string
+  sha: string
+  commit: CheckCommitInfo
+}
+
+interface MergedPrInfo {
+  mergedAt: string
+  title: string
+  number: number
+  url: string
+  user: string
+}
+
 export class GithubOps {
   constructor(private readonly kit: Octokit, private readonly gitOps: GitOps) {}
 
@@ -9,7 +45,7 @@ export class GithubOps {
     return d.data.login
   }
 
-  async listPrs(): Promise<void> {
+  async listPrs(): Promise<PrInfo[]> {
     const [repo, user] = await Promise.all([this.gitOps.getRepo(), this.getUser()])
 
     // const req: Octokit.PullsListParams = {
@@ -44,7 +80,7 @@ export class GithubOps {
 
   getCurrentPr(): void {}
 
-  async listChecks(): Promise<void> {
+  async listChecks(): Promise<CheckInfo> {
     const r = await this.gitOps.getRepo()
     const b = await this.gitOps.getBranch()
     const statusPromise = this.kit.repos.getCombinedStatusForRef({
@@ -77,7 +113,7 @@ export class GithubOps {
     return { statuses, state: status.data.state, sha: status.data.sha, commit: d }
   }
 
-  async listMerged(user?: string): Promise<void> {
+  async listMerged(user?: string): Promise<MergedPrInfo[]> {
     const r = await this.gitOps.getRepo()
 
     const pageSize = user ? 100 : 40
