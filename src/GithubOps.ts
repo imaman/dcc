@@ -65,13 +65,15 @@ export class GithubOps {
     return prs.filter(curr => curr.user === user)
   }
 
-  async getCurrentPr(): Promise<PrInfo[]> {
+  async getCurrentPr(): Promise<PrInfo | undefined> {
     const b = await this.gitOps.getBranch()
     const [repo, user] = await Promise.all([this.gitOps.getRepo(), this.getUser()])
 
+    const q = `type:pr	head:${b.name} author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`
     const respB = await this.kit.search.issuesAndPullRequests({
-      q: `type:pr	head:${b} author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`,
+      q,
     })
+
     const prs = respB.data.items.map(curr => ({
       user: curr.user.login,
       title: curr.title,
@@ -83,7 +85,11 @@ export class GithubOps {
       state: curr.state,
     }))
 
-    return prs.filter(curr => curr.user === user)
+    const filtered = prs.filter(curr => curr.user === user)
+    if (filtered.length !== 1) {
+      return undefined
+    }
+    return filtered[0]
   }
 
   async listChecks(): Promise<CheckInfo> {
