@@ -6,7 +6,7 @@
   "scripts": {
     "lint": "eslint --max-warnings 0 'modules/*/**/*.{ts,js,json,d.ts}'",
     "build": "tsc",
-    "unit": "mocha -r ts-node/register --exit --timeout 50000 '__tests__/**/*.test.ts'"
+    "test": "mocha -r ts-node/register --exit --timeout 50000 '__tests__/**/*.test.ts'"
   },
   "husky": {
     "hooks": {
@@ -26,6 +26,10 @@
   "devDependencies": {
     "@types/mocha": "^5.2.7",
     "@types/node": "^12.7.7",
+    "@types/source-map-support": "^0.5.3",
+    "@types/yargs": "11.0.0",
+    "@typescript-eslint/eslint-plugin": "^4.2.0",
+    "@typescript-eslint/parser": "^4.2.0",
     "eslint": "6.5.1",
     "eslint-config-prettier": "4.3.0",
     "eslint-plugin-jest": "22.6.4",
