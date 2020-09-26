@@ -1,6 +1,33 @@
 import { SimpleGit } from 'simple-git/promise'
 import * as child_process from 'child_process'
 
+interface BranchInfo {
+  current: string
+  name: string
+  commit: string
+  label: string
+}
+
+interface RepoInfo {
+  owner: string
+  name: string
+}
+
+interface LogInfo {
+  hash: string
+  date: string
+  message: string
+  refs: string
+  body: string
+  author_name: string
+  author_email: string
+}
+
+interface CommitInfo {
+  ordinal: number
+  data: LogInfo
+}
+
 function stopMe(message: string) {
   // eslint-disable-next-line no-console
   console.log(message)
@@ -11,29 +38,30 @@ function stopMe(message: string) {
 export class GitOps {
   constructor(private readonly git: SimpleGit) {}
 
-  async describeCommit(sha: string) {
+  async describeCommit(sha: string): Promise<CommitInfo | undefined> {
     const log = await this.git.log()
     const index = log.all.findIndex(curr => curr.hash === sha)
     if (index < 0) {
       return undefined
     }
 
-    return { ordinal: index, data: log.all[index] }
+    const data = log.all[index]
+    return { ordinal: index, data }
   }
 
-  async getBranch() {
+  async getBranch(): Promise<BranchInfo> {
     const bs = await this.git.branch(['-vv'])
     return bs.branches[bs.current]
   }
 
-  async noUncommittedChanges() {
+  async noUncommittedChanges(): Promise<void> {
     const d = await this.git.diffSummary()
     if (d.files.length) {
       stopMe('you have uncommitted changes')
     }
   }
 
-  async push() {
+  async push(): Promise<void> {
     await this.noUncommittedChanges()
     const b = await this.getBranch()
 
@@ -43,7 +71,7 @@ export class GitOps {
     }
   }
 
-  async getRepo() {
+  async getRepo(): Promise<RepoInfo> {
     const r = await this.git.remote(['-v'])
     // "origin\tgit@github.com:imaman/dcc.git (fetch)\norigin\tgit@github.com:imaman/dcc.git (push)\n"
     if (typeof r !== 'string') {
