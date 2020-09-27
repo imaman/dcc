@@ -106,6 +106,7 @@ async function push() {
 }
 
 async function createPr(args: Arguments) {
+  // TODO(imaman): allow updating the PR title if one has already been created
   await githubOps.createPr(args.title)
 }
 
@@ -115,7 +116,7 @@ async function info() {
   if (!pr) {
     console.log('No PR was created for this branch')
   } else {
-    console.log(`PR: #${pr.number}`)
+    console.log(`PR #${pr.number}: ${pr.title}`)
     console.log(pr.url)
     console.log(`Can be merged? ${pr.mergeBlockerFound ? 'No' : 'Yes'}`)
     if (pr.conflicts) {

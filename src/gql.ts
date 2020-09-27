@@ -4,6 +4,7 @@ import * as octokit from '@octokit/graphql'
 import { graphql } from '@octokit/graphql/dist-types/types'
 
 export interface CurrentPrInfo {
+  title: string
   number: number
   conflicts: boolean
   mergeBlockerFound: boolean
@@ -100,6 +101,7 @@ export class GraphqlOps {
       url: c.targetUrl,
     }))
     return {
+      title: pr.title,
       number: pr.number,
       conflicts: hasConflicts,
       mergeBlockerFound: hasConflicts || checksAreNegative,
