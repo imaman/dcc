@@ -92,6 +92,11 @@ export class GithubOps {
     return filtered[0]
   }
 
+  async merge(prNumber: number): Promise<void> {
+    const r = await this.gitOps.getRepo()
+    await this.kit.pulls.merge({ owner: r.owner, repo: r.name, pull_number: prNumber })
+  }
+
   async listChecks(): Promise<CheckInfo> {
     const r = await this.gitOps.getRepo()
     const b = await this.gitOps.getBranch()
