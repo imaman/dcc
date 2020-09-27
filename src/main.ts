@@ -60,7 +60,7 @@ async function mergePr() {
     return
   }
 
-  this.gitOps.noUncommittedChanges()
+  gitOps.noUncommittedChanges()
 
   if (!pr.lastCommit) {
     throw new Error(`Failed to retreive information about the PR's latest commit`)
