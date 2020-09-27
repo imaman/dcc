@@ -92,6 +92,7 @@ export class GraphqlOps {
     const rollupState = commit?.statusCheckRollup?.state
     const checksArePositive = rollupState === 'SUCCESS'
     const checksAreNegative = rollupState === 'ERROR' || rollupState === 'FAILURE'
+    console.log('commit=' + JSON.stringify(commit, null, 2))
     const checks = commit?.status?.contexts?.map(c => ({
       state: c.state,
       description: c.description,
