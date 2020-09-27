@@ -54,6 +54,7 @@ async function listPrs() {
 
 /* eslint-disable no-console */
 async function mergePr() {
+  // TODO(imaman): not on master
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     console.log(`No PR was found for the current branch (use "dcc pr" to create one)`)
@@ -99,10 +100,12 @@ async function listMerged(args: Arguments) {
 }
 
 async function push() {
+  // TODO(imaman): not on master
   await gitOps.push()
 }
 
 async function createPr(args: Arguments) {
+  // TODO(imaman): not on master
   await githubOps.createPr(args.title)
 }
 
@@ -137,6 +140,8 @@ async function info() {
     console.log()
   }
 }
+
+// TODO(imaman): show help when no command is given
 
 /* tslint:disable:no-shadowed-variable no-unused-expression */
 yargs
