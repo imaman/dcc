@@ -8,6 +8,7 @@ export interface CurrentPrInfo {
   conflicts: boolean
   mergeBlockerFound: boolean
   url: string
+  checksArePositive: boolean
   rollupState: string
   checks: {
     url: string
@@ -88,6 +89,8 @@ export class GraphqlOps {
     const hasConflicts = pr.mergeable !== 'MERGEABLE'
 
     const rollupState = commit?.statusCheckRollup?.state
+    const checksArePositive = rollupState === 'SUCCESS'
+    const checksAreNegative = rollupState === 'ERROR' || rollupState === 'FAILURE'
     const checks = commit?.status?.contexts?.map(c => ({
       state: c.state,
       description: c.description,
@@ -96,8 +99,9 @@ export class GraphqlOps {
     return {
       number: pr.number,
       conflicts: hasConflicts,
-      mergeBlockerFound: hasConflicts || rollupState === 'ERROR' || rollupState === 'FAILURE',
+      mergeBlockerFound: hasConflicts || checksAreNegative,
       url: pr.url,
+      checksArePositive,
       rollupState,
       checks,
       lastCommit: commit && { message: commit?.message, abbreviatedOid: commit?.abbreviatedOid, ordinal },
