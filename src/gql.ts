@@ -5,6 +5,8 @@ import { graphql } from '@octokit/graphql/dist-types/types'
 
 export interface CurrentPrInfo {
   number: number
+  conflicts: boolean
+  canBeMerged: boolean
   url: string
   rollupState: string
   checks: {
@@ -47,6 +49,7 @@ export class GraphqlOps {
               title
               number
               url
+              mergeable
               commits(last: 1) {
                 nodes {
                   commit {
@@ -91,6 +94,8 @@ export class GraphqlOps {
     }))
     return {
       number: pr.number,
+      conflicts: pr.mergeable !== 'MERGEABLE',
+      canBeMerged: pr.mergeable === 'MERGEABLE' && rollupState === 'SUCCESS',
       url: pr.url,
       rollupState,
       checks,
