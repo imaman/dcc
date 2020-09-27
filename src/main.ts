@@ -57,6 +57,7 @@ async function mergePr() {
   // TODO(imaman): auto-create a PR if one has not been created?
   // TODO(imaman): if only one commit from master, take it as the PR title?
   // TODO(imaman): should switch back to master before returning?
+  // TODO(imaman): not on master
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     console.log(`No PR was found for the current branch (use "dcc pr" to create one)`)
@@ -102,11 +103,13 @@ async function listMerged(args: Arguments) {
 }
 
 async function push() {
+  // TODO(imaman): not on master
   await gitOps.push()
 }
 
 async function createPr(args: Arguments) {
   // TODO(imaman): allow updating the PR title if one has already been created
+  // TODO(imaman): not on master
   await githubOps.createPr(args.title)
 }
 
@@ -142,6 +145,8 @@ async function info() {
     console.log()
   }
 }
+
+// TODO(imaman): show help when no command is given
 
 /* tslint:disable:no-shadowed-variable no-unused-expression */
 yargs
