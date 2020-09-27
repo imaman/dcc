@@ -54,6 +54,9 @@ async function listPrs() {
 
 /* eslint-disable no-console */
 async function mergePr() {
+  // TODO(imaman): auto-create a PR if one has not been created?
+  // TODO(imaman): if only one commit from master, take it as the PR title?
+  // TODO(imaman): should switch back to master before returning?
   // TODO(imaman): not on master
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
@@ -105,16 +108,19 @@ async function push() {
 }
 
 async function createPr(args: Arguments) {
+  // TODO(imaman): allow updating the PR title if one has already been created
   // TODO(imaman): not on master
   await githubOps.createPr(args.title)
 }
 
 async function info() {
+  // TODO(imaman): should print whether there are local changes that need to be merged.
+  // TODO(imaman): should show info about closed PR if still on that branch (think about the exact UX that is needed here)
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     console.log('No PR was created for this branch')
   } else {
-    console.log(`PR: #${pr.number}`)
+    console.log(`PR #${pr.number}: ${pr.title}`)
     console.log(pr.url)
     console.log(`Can be merged? ${pr.mergeBlockerFound ? 'No' : 'Yes'}`)
     if (pr.conflicts) {
@@ -153,6 +159,7 @@ yargs
     describe: 'directroy to run at',
     type: 'string',
   })
+  // TODO(imaman): add a sync command to fetch master and merge it in.
   .command('info', 'Vital signs of the current PR', a => a, launch(info))
   .command('push', 'push your branch', a => a, launch(push))
   .command('ongoing', 'List currently open PRs', a => a, launch(listPrs))
