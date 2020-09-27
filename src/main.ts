@@ -76,7 +76,7 @@ async function mergePr() {
     return
   }
 
-  if (pr.checksArePositive) {
+  if (pr.checksArePositive || pr.rollupStateIsMissing) {
     console.log('merging')
     await githubOps.merge(pr.number)
     return
