@@ -54,6 +54,7 @@ async function listPrs() {
 
 /* eslint-disable no-console */
 async function mergePr() {
+  // TODO(imaman): should switch back to master before returning?
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     console.log(`No PR was found for the current branch (use "dcc pr" to create one)`)
@@ -107,6 +108,7 @@ async function createPr(args: Arguments) {
 }
 
 async function info() {
+  // TODO(imaman): should show info about closed PR if still on that branch (think about the exact UX that is needed here)
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     console.log('No PR was created for this branch')
