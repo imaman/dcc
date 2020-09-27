@@ -55,6 +55,7 @@ async function listPrs() {
 /* eslint-disable no-console */
 async function mergePr() {
   // TODO(imaman): auto-create a PR if one has not been created?
+  // TODO(imaman): if only one commit from master, take it as the PR title?
   // TODO(imaman): should switch back to master before returning?
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
