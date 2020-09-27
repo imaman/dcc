@@ -21,7 +21,7 @@ const octoKit = new Octokit({ auth: token })
 
 const gitOps = new GitOps(git())
 const githubOps = new GithubOps(octoKit, gitOps)
-const graphqlOps = new GraphqlOps(token, gitOps, githubOps)
+const graphqlOps = new GraphqlOps(token, gitOps)
 
 function format(s: string, n: number) {
   if (s.length > n) {
@@ -87,9 +87,24 @@ async function createPr(args: Arguments) {
 async function info() {
   const pr = await graphqlOps.getCurrentPr()
   // console.log(`x=${JSON.stringify(x, null, 2)}`)
-  if (pr) {
+  // if (pr) {
+  //   console.log('PR ' + pr.number)
+  //   console.log(pr.url)
+  //   console.log(pr.rollupState)
+  //   console.log(JSON.stringify(pr.checks))
+  //   console.log()
+  // }
+
+  if (!pr) {
+    console.log('No PR was created for this branch')
+  } else {
     console.log('PR ' + pr.number)
     console.log(pr.url)
+    if (pr.lastCommit) {
+      console.log(`${pr.rollupState} at ${pr.lastCommit.abbreviatedOid} ${pr.lastCommit.message.substr(0, 60)}`)
+    }
+    // console.log(`Last commit: ${pr.abbreviatedOid} ${pr.commitMessage.substr(0, 60)}`)
+    // console.log(JSON.stringify(pr.checks))
     console.log()
   }
 
@@ -130,7 +145,7 @@ yargs
     describe: 'directroy to run at',
     type: 'string',
   })
-  .command('info', 'CI details', a => a, launch(info))
+  .command('info', 'Vital signs of the current PR', a => a, launch(info))
   .command('push', 'push your branch', a => a, launch(push))
   .command('prs', 'List currently open PRs', a => a, launch(listPrs))
   .command('merge', 'Merge the current PR', a => a, launch(mergePr))

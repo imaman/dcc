@@ -1,14 +1,22 @@
 import { GitOps } from './GitOps'
 import { createTokenAuth } from '@octokit/auth-token'
 import * as octokit from '@octokit/graphql'
-import * as fs from 'fs'
 import { graphql } from '@octokit/graphql/dist-types/types'
-import { GithubOps } from './GithubOps'
-import { prependListener } from 'process'
+
+export interface CurrentPrInfo {
+  number: number
+  url: string
+  rollupState: string
+  checks: string[]
+  lastCommit?: {
+    message: string
+    abbreviatedOid?: string
+  }
+}
 
 export class GraphqlOps {
   private readonly authedGraphql: graphql
-  constructor(token: string, private readonly gitOps: GitOps, private readonly githubOps: GithubOps) {
+  constructor(token: string, private readonly gitOps: GitOps) {
     const auth = createTokenAuth(token)
 
     this.authedGraphql = octokit.graphql.defaults({
@@ -18,7 +26,7 @@ export class GraphqlOps {
     })
   }
 
-  async getCurrentPr() {
+  async getCurrentPr(): Promise<CurrentPrInfo | undefined> {
     const b = await this.gitOps.getBranch()
     // const user = await this.githubOps.getUser()
     const repo = await this.gitOps.getRepo()
@@ -34,6 +42,24 @@ export class GraphqlOps {
               title
               number
               url
+              commits(last: 1) {
+                nodes {
+                  commit {
+                    message
+                    abbreviatedOid
+                    statusCheckRollup {
+                      state
+                    }
+                    status {
+                      contexts {
+                        state
+                        targetUrl
+                        description
+                      }
+                    }
+                  }
+                }
+              }    
             }
           }
         }
@@ -47,7 +73,20 @@ export class GraphqlOps {
       return undefined
     }
 
-    return { number: pr.number, url: pr.url }
+    const commit = pr?.commits?.nodes && pr?.commits?.nodes[0]?.commit
+    const rollupState = commit?.statusCheckRollup?.state
+    const checks = commit?.status?.contexts?.map(c => ({
+      state: c.state,
+      description: c.description,
+      url: c.targetUrl,
+    }))
+    return {
+      number: pr.number,
+      url: pr.url,
+      rollupState,
+      checks,
+      lastCommit: commit && { message: commit?.message, abbreviatedOid: commit?.abbreviatedOid },
+    }
   }
 }
 // async function main() {
