@@ -6,7 +6,7 @@ import { graphql } from '@octokit/graphql/dist-types/types'
 export interface CurrentPrInfo {
   number: number
   conflicts: boolean
-  canBeMerged: boolean
+  mergeBlockerFound: boolean
   url: string
   rollupState: string
   checks: {
@@ -85,6 +85,7 @@ export class GraphqlOps {
     const commit = pr?.commits?.nodes && pr?.commits?.nodes[0]?.commit
     const d = commit && (await this.gitOps.describeCommit(commit?.oid))
     const ordinal = d ? d.ordinal : -1
+    const hasConflicts = pr.mergeable !== 'MERGEABLE'
 
     const rollupState = commit?.statusCheckRollup?.state
     const checks = commit?.status?.contexts?.map(c => ({
@@ -94,8 +95,8 @@ export class GraphqlOps {
     }))
     return {
       number: pr.number,
-      conflicts: pr.mergeable !== 'MERGEABLE',
-      canBeMerged: pr.mergeable === 'MERGEABLE' && rollupState === 'SUCCESS',
+      conflicts: hasConflicts,
+      mergeBlockerFound: hasConflicts || rollupState === 'ERROR' || rollupState === 'FAILURE',
       url: pr.url,
       rollupState,
       checks,

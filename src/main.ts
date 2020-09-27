@@ -69,7 +69,7 @@ async function mergePr() {
     return
   }
 
-  if (!pr.canBeMerged) {
+  if (pr.mergeBlockerFound) {
     console.log(`The PR cannot be merged at this point (use "dcc info" to see why)`)
     return
   }
@@ -104,7 +104,7 @@ async function info() {
   } else {
     console.log(`PR: #${pr.number}`)
     console.log(pr.url)
-    console.log(`Can be merged? ${pr.canBeMerged ? 'Yes' : 'No'}`)
+    console.log(`Can be merged? ${pr.mergeBlockerFound ? 'No' : 'Yes'}`)
     if (pr.conflicts) {
       console.log(`Merge conflicts were found`)
     }
