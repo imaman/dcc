@@ -95,44 +95,26 @@ async function info() {
   //   console.log()
   // }
 
+  // console.log(process.cwd())
   if (!pr) {
     console.log('No PR was created for this branch')
   } else {
-    console.log('PR ' + pr.number)
+    console.log(`PR: #${pr.number}`)
     console.log(pr.url)
     if (pr.lastCommit) {
-      console.log(`${pr.rollupState} at ${pr.lastCommit.abbreviatedOid} ${pr.lastCommit.message.substr(0, 60)}`)
+      let x = ''
+      if (pr.lastCommit.ordinal >= 0) {
+        x = '(HEAD' + (pr.lastCommit.ordinal ? `~${pr.lastCommit.ordinal}` : '') + ') '
+      }
+
+      console.log(`${pr.rollupState} at ${x}${pr.lastCommit.abbreviatedOid}: ${pr.lastCommit.message.substr(0, 60)}`)
     }
-    // console.log(`Last commit: ${pr.abbreviatedOid} ${pr.commitMessage.substr(0, 60)}`)
-    // console.log(JSON.stringify(pr.checks))
+
+    for (const c of pr.checks) {
+      console.log(`  - ${c.state} ${c.url}\n    ${c.description}\n`)
+    }
     console.log()
   }
-
-  const o = await githubOps.listChecks()
-
-  console.log(process.cwd())
-  console.log('Pushed: HEAD' + (o.commit.ordinal ? `~${o.commit.ordinal}` : ''))
-  console.log('Commit: ' + o.commit.data.hash)
-  console.log('Message: ' + o.commit.data.message.substr(0, 60))
-
-  // console.log()
-  // const notPassingRequired = o.statuses.filter(curr => curr.required).filter(curr => curr.state !== 'success')
-  // console.log(`Required checks pass? ${notPassingRequired.length ? 'no' : 'YES'}`)
-
-  // if (notPassingRequired.length) {
-  //   for (const curr of notPassingRequired) {
-  //     console.log('  ' + curr.context + '? ' + curr.state)
-  //   }
-  // }
-
-  // console.log()
-  // const notPassingOptional = o.statuses.filter(curr => !curr.required).filter(curr => curr.state !== 'success')
-  // console.log(`Optional checks pass? ${notPassingOptional.length ? 'no' : 'YES'}`)
-  // if (notPassingOptional.length) {
-  //   for (const curr of notPassingOptional) {
-  //     console.log('  ' + curr.context + '? ' + curr.state)
-  //   }
-  // }
 }
 
 /* tslint:disable:no-shadowed-variable no-unused-expression */

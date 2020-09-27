@@ -7,10 +7,15 @@ export interface CurrentPrInfo {
   number: number
   url: string
   rollupState: string
-  checks: string[]
+  checks: {
+    url: string
+    description: string
+    state: string
+  }[]
   lastCommit?: {
     message: string
     abbreviatedOid?: string
+    ordinal: number
   }
 }
 
@@ -47,6 +52,7 @@ export class GraphqlOps {
                   commit {
                     message
                     abbreviatedOid
+                    oid
                     statusCheckRollup {
                       state
                     }
@@ -74,6 +80,9 @@ export class GraphqlOps {
     }
 
     const commit = pr?.commits?.nodes && pr?.commits?.nodes[0]?.commit
+    const d = commit && (await this.gitOps.describeCommit(commit?.oid))
+    const ordinal = d ? d.ordinal : -1
+
     const rollupState = commit?.statusCheckRollup?.state
     const checks = commit?.status?.contexts?.map(c => ({
       state: c.state,
@@ -85,7 +94,7 @@ export class GraphqlOps {
       url: pr.url,
       rollupState,
       checks,
-      lastCommit: commit && { message: commit?.message, abbreviatedOid: commit?.abbreviatedOid },
+      lastCommit: commit && { message: commit?.message, abbreviatedOid: commit?.abbreviatedOid, ordinal },
     }
   }
 }
