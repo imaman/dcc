@@ -117,6 +117,7 @@ async function createPr(args: Arguments) {
 async function info() {
   // TODO(imaman): should print whether there are local changes that need to be merged.
   // TODO(imaman): should show info about closed PR if still on that branch (think about the exact UX that is needed here)
+  // TODO(imaman): show 'auto-merge' indication.
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     console.log('No PR was created for this branch')
