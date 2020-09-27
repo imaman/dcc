@@ -69,7 +69,7 @@ export class GithubOps {
     const b = await this.gitOps.getBranch()
     const [repo, user] = await Promise.all([this.gitOps.getRepo(), this.getUser()])
 
-    const q = `type:pr	head:${b.name} author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`
+    const q = `type:pr head:"${b.name}" author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`
     const respB = await this.kit.search.issuesAndPullRequests({
       q,
     })

@@ -11,15 +11,17 @@ import { Arguments } from 'yargs'
 
 import { GithubOps } from './GithubOps'
 import { GitOps } from './GitOps'
+import { GraphqlOps } from './gql'
 
-const auth = fs
+const token = fs
   .readFileSync(path.resolve(__dirname, '../.conf'), 'utf-8')
   .split('\n')[0]
   .trim()
-const octoKit = new Octokit({ auth })
+const octoKit = new Octokit({ auth: token })
 
 const gitOps = new GitOps(git())
 const githubOps = new GithubOps(octoKit, gitOps)
+const graphqlOps = new GraphqlOps(token, gitOps, githubOps)
 
 function format(s: string, n: number) {
   if (s.length > n) {
@@ -83,15 +85,20 @@ async function createPr(args: Arguments) {
 }
 
 async function info() {
-  const x = await githubOps.getCurrentPr()
-  console.log(`x=${JSON.stringify(x, null, 2)}`)
+  const pr = await graphqlOps.getCurrentPr()
+  // console.log(`x=${JSON.stringify(x, null, 2)}`)
+  if (pr) {
+    console.log('PR ' + pr.number)
+    console.log(pr.url)
+    console.log()
+  }
 
-  // const o = await githubOps.listChecks()
+  const o = await githubOps.listChecks()
 
-  // console.log(process.cwd())
-  // console.log('Pushed: HEAD' + (o.commit.ordinal ? `~${o.commit.ordinal}` : ''))
-  // console.log('Commit: ' + o.commit.data.hash)
-  // console.log('Message: ' + o.commit.data.message.substr(0, 60))
+  console.log(process.cwd())
+  console.log('Pushed: HEAD' + (o.commit.ordinal ? `~${o.commit.ordinal}` : ''))
+  console.log('Commit: ' + o.commit.data.hash)
+  console.log('Message: ' + o.commit.data.message.substr(0, 60))
 
   // console.log()
   // const notPassingRequired = o.statuses.filter(curr => curr.required).filter(curr => curr.state !== 'success')
