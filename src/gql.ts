@@ -10,6 +10,7 @@ export interface CurrentPrInfo {
   url: string
   checksArePositive: boolean
   rollupState: string
+  rollupStateIsMissing: boolean
   checks: {
     url: string
     description: string
@@ -92,7 +93,7 @@ export class GraphqlOps {
     const rollupState = commit?.statusCheckRollup?.state
     const checksArePositive = rollupState === 'SUCCESS'
     const checksAreNegative = rollupState === 'ERROR' || rollupState === 'FAILURE'
-    console.log('commit=' + JSON.stringify(commit, null, 2))
+    const rollupStateIsMissing = rollupState === null
     const checks = commit?.status?.contexts?.map(c => ({
       state: c.state,
       description: c.description,
@@ -105,6 +106,7 @@ export class GraphqlOps {
       url: pr.url,
       checksArePositive,
       rollupState,
+      rollupStateIsMissing,
       checks,
       lastCommit: commit && {
         message: commit?.message,
