@@ -86,6 +86,7 @@ export class GraphqlOps {
       return undefined
     }
 
+    // TODO(imaman): do logging
     const commit = pr?.commits?.nodes && pr?.commits?.nodes[0]?.commit
     const d = commit && (await this.gitOps.describeCommit(commit?.oid))
     const ordinal = d ? d.ordinal : -1

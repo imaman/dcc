@@ -80,6 +80,7 @@ async function mergePr() {
     return
   }
 
+  // TODO(imaman): pr.rollupStateIsMissing is valid only if no required checks are defined
   if (pr.checksArePositive || pr.rollupStateIsMissing) {
     console.log('merging')
     await githubOps.merge(pr.number)
