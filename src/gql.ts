@@ -78,7 +78,7 @@ export class GraphqlOps {
       }
     }`
     const { repository } = await this.authedGraphql(q)
-    const nodes = repository.ref.associatedPullRequests.nodes
+    const nodes = repository?.ref?.associatedPullRequests?.nodes
     const pr = nodes && nodes[0]
 
     if (!pr) {
