@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import * as Octokit from '@octokit/rest'
+import { Octokit } from '@octokit/rest'
 
 import * as sourceMapSupport from 'source-map-support'
 sourceMapSupport.install()
@@ -11,15 +11,17 @@ import { Arguments } from 'yargs'
 
 import { GithubOps } from './GithubOps'
 import { GitOps } from './GitOps'
+import { GraphqlOps } from './gql'
 
-const auth = fs
+const token = fs
   .readFileSync(path.resolve(__dirname, '../.conf'), 'utf-8')
   .split('\n')[0]
   .trim()
-const octoKit = new Octokit({ auth })
+const octoKit = new Octokit({ auth: token })
 
 const gitOps = new GitOps(git())
 const githubOps = new GithubOps(octoKit, gitOps)
+const graphqlOps = new GraphqlOps(token, gitOps)
 
 function format(s: string, n: number) {
   if (s.length > n) {
@@ -50,6 +52,40 @@ async function listPrs() {
   }
 }
 
+/* eslint-disable no-console */
+async function mergePr() {
+  const pr = await graphqlOps.getCurrentPr()
+  if (!pr) {
+    console.log(`No PR was found for the current branch (use "dcc pr" to create one)`)
+    return
+  }
+
+  gitOps.noUncommittedChanges()
+
+  if (!pr.lastCommit) {
+    throw new Error(`Failed to retreive information about the PR's latest commit`)
+  }
+
+  if (pr.lastCommit.ordinal !== 0) {
+    console.log(`You have local changes that were not pushed to the PR`)
+    return
+  }
+
+  if (pr.mergeBlockerFound) {
+    console.log(`The PR cannot be merged at this point (use "dcc info" to see why)`)
+    return
+  }
+
+  if (pr.checksArePositive || pr.rollupStateIsMissing) {
+    console.log('merging')
+    await githubOps.merge(pr.number)
+    return
+  }
+
+  console.log('using #automerge')
+  await githubOps.addPrComment(pr.number, '#automerge')
+}
+
 async function listMerged(args: Arguments) {
   const d = await githubOps.listMerged(args.user)
 
@@ -71,30 +107,34 @@ async function createPr(args: Arguments) {
 }
 
 async function info() {
-  const o = await githubOps.listChecks()
-
-  console.log(process.cwd())
-  console.log('Pushed: HEAD' + (o.commit.ordinal ? `~${o.commit.ordinal}` : ''))
-  console.log('Commit: ' + o.commit.data.hash)
-  console.log('Message: ' + o.commit.data.message.substr(0, 60))
-
-  console.log()
-  const notPassingRequired = o.statuses.filter(curr => curr.required).filter(curr => curr.state !== 'success')
-  console.log(`Required checks pass? ${notPassingRequired.length ? 'no' : 'YES'}`)
-
-  if (notPassingRequired.length) {
-    for (const curr of notPassingRequired) {
-      console.log('  ' + curr.context + '? ' + curr.state)
+  const pr = await graphqlOps.getCurrentPr()
+  if (!pr) {
+    console.log('No PR was created for this branch')
+  } else {
+    console.log(`PR: #${pr.number}`)
+    console.log(pr.url)
+    console.log(`Can be merged? ${pr.mergeBlockerFound ? 'No' : 'Yes'}`)
+    if (pr.conflicts) {
+      console.log(`Merge conflicts were found`)
     }
-  }
+    if (pr.lastCommit) {
+      let headIndication = ''
+      if (pr.lastCommit.ordinal >= 0) {
+        headIndication = '(HEAD' + (pr.lastCommit.ordinal ? `~${pr.lastCommit.ordinal}` : '') + ') '
+      }
 
-  console.log()
-  const notPassingOptional = o.statuses.filter(curr => !curr.required).filter(curr => curr.state !== 'success')
-  console.log(`Optional checks pass? ${notPassingOptional.length ? 'no' : 'YES'}`)
-  if (notPassingOptional.length) {
-    for (const curr of notPassingOptional) {
-      console.log('  ' + curr.context + '? ' + curr.state)
+      console.log(
+        `${pr.rollupState || ''} at ${headIndication}${pr.lastCommit.abbreviatedOid}: ${pr.lastCommit.message.substr(
+          0,
+          60,
+        )}`.trim(),
+      )
     }
+
+    for (const c of pr.checks || []) {
+      console.log(`  - ${c.state} ${c.url}\n    ${c.description}\n`)
+    }
+    console.log()
   }
 }
 
@@ -108,11 +148,12 @@ yargs
     describe: 'directroy to run at',
     type: 'string',
   })
-  .command('info', 'CI details', a => a, launch(info))
+  .command('info', 'Vital signs of the current PR', a => a, launch(info))
   .command('push', 'push your branch', a => a, launch(push))
   .command('prs', 'List currently open PRs', a => a, launch(listPrs))
+  .command('merge', 'Merge the current PR', a => a, launch(mergePr))
   .command(
-    'merged',
+    'prs-recent',
     'List recently merged PRs',
     yargs =>
       yargs.option('user', {
