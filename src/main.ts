@@ -54,14 +54,27 @@ async function listPrs() {
 
 /* eslint-disable no-console */
 async function mergePr() {
-  const d = await githubOps.listPrs()
-  for (const curr of d) {
-    console.log(
-      `${curr.updatedAt} ${('#' + curr.number).padStart(6)} ${format(curr.user, 10)} ${format(curr.title, 60)} ${
-        curr.url
-      }`,
-    )
+  const pr = await graphqlOps.getCurrentPr()
+  if (!pr) {
+    console.log(`No PR was found for the current branch (use "dcc pr" to create one)`)
+    return
   }
+
+  if (!pr.lastCommit) {
+    throw new Error(`Failed to retreive information about the PR's latest commit`)
+  }
+
+  if (pr.lastCommit.ordinal !== 0) {
+    console.log(`You have local changes that were not pushed to the PR`)
+    return
+  }
+
+  if (!pr.canBeMerged) {
+    console.log(`The PR cannot be merged at this point (use "dcc info" to see why)`)
+    return
+  }
+
+  await githubOps.merge(pr.number)
 }
 
 async function listMerged(args: Arguments) {
@@ -86,21 +99,15 @@ async function createPr(args: Arguments) {
 
 async function info() {
   const pr = await graphqlOps.getCurrentPr()
-  // console.log(`x=${JSON.stringify(x, null, 2)}`)
-  // if (pr) {
-  //   console.log('PR ' + pr.number)
-  //   console.log(pr.url)
-  //   console.log(pr.rollupState)
-  //   console.log(JSON.stringify(pr.checks))
-  //   console.log()
-  // }
-
-  // console.log(process.cwd())
   if (!pr) {
     console.log('No PR was created for this branch')
   } else {
     console.log(`PR: #${pr.number}`)
     console.log(pr.url)
+    console.log(`Can be merged? ${pr.canBeMerged ? 'Yes' : 'No'}`)
+    if (pr.conflicts) {
+      console.log(`Merge conflicts were found`)
+    }
     if (pr.lastCommit) {
       let x = ''
       if (pr.lastCommit.ordinal >= 0) {
