@@ -74,7 +74,7 @@ async function mergePr() {
     return
   }
 
-  await githubOps.merge(pr.number)
+  if (pr.rollupState === '') await githubOps.merge(pr.number)
 }
 
 async function listMerged(args: Arguments) {
@@ -109,12 +109,14 @@ async function info() {
       console.log(`Merge conflicts were found`)
     }
     if (pr.lastCommit) {
-      let x = ''
+      let headIndication = ''
       if (pr.lastCommit.ordinal >= 0) {
-        x = '(HEAD' + (pr.lastCommit.ordinal ? `~${pr.lastCommit.ordinal}` : '') + ') '
+        headIndication = '(HEAD' + (pr.lastCommit.ordinal ? `~${pr.lastCommit.ordinal}` : '') + ') '
       }
 
-      console.log(`${pr.rollupState} at ${x}${pr.lastCommit.abbreviatedOid}: ${pr.lastCommit.message.substr(0, 60)}`)
+      console.log(
+        `${pr.rollupState} at ${headIndication}${pr.lastCommit.abbreviatedOid}: ${pr.lastCommit.message.substr(0, 60)}`,
+      )
     }
 
     for (const c of pr.checks) {
