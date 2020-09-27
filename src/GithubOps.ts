@@ -1,5 +1,5 @@
 import { GitOps } from './GitOps'
-import * as Octokit from '@octokit/rest'
+import { Octokit } from '@octokit/rest'
 
 interface PrInfo {
   url: string
@@ -94,7 +94,17 @@ export class GithubOps {
 
   async merge(prNumber: number): Promise<void> {
     const r = await this.gitOps.getRepo()
-    await this.kit.pulls.merge({ owner: r.owner, repo: r.name, pull_number: prNumber })
+    await this.kit.pulls.merge({ owner: r.owner, repo: r.name, pull_number: prNumber, merge_method: 'squash' })
+  }
+
+  async addPrComment(prNumber: number, body: string): Promise<void> {
+    const r = await this.gitOps.getRepo()
+    await this.kit.issues.createComment({
+      body,
+      owner: r.owner,
+      repo: r.name,
+      issue_number: prNumber,
+    })
   }
 
   async listChecks(): Promise<CheckInfo> {
@@ -134,15 +144,14 @@ export class GithubOps {
     const r = await this.gitOps.getRepo()
 
     const pageSize = user ? 100 : 40
-    const req: Octokit.PullsListParams = {
+    const resp = await this.kit.pulls.list({
       owner: r.owner,
       repo: r.name,
       state: 'closed',
       sort: 'updated',
       direction: 'desc',
       per_page: pageSize,
-    }
-    const resp = await this.kit.pulls.list(req)
+    })
     let prs = resp.data.map(curr => ({
       user: curr.user.login,
       title: curr.title,
@@ -171,7 +180,7 @@ export class GithubOps {
     const b = await this.gitOps.getBranch()
     const r = await this.gitOps.getRepo()
 
-    const req: Octokit.PullsCreateParams = {
+    const req = {
       base: 'master',
       head: b.name,
       owner: r.owner,

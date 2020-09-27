@@ -18,6 +18,7 @@ export interface CurrentPrInfo {
   lastCommit?: {
     message: string
     abbreviatedOid?: string
+    oid: string
     ordinal: number
   }
 }
@@ -104,7 +105,12 @@ export class GraphqlOps {
       checksArePositive,
       rollupState,
       checks,
-      lastCommit: commit && { message: commit?.message, abbreviatedOid: commit?.abbreviatedOid, ordinal },
+      lastCommit: commit && {
+        message: commit?.message,
+        abbreviatedOid: commit?.abbreviatedOid,
+        ordinal,
+        oid: commit?.oid,
+      },
     }
   }
 }

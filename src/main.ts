@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import * as Octokit from '@octokit/rest'
+import { Octokit } from '@octokit/rest'
 
 import * as sourceMapSupport from 'source-map-support'
 sourceMapSupport.install()
@@ -60,6 +60,8 @@ async function mergePr() {
     return
   }
 
+  this.gitOps.noUncommittedChanges()
+
   if (!pr.lastCommit) {
     throw new Error(`Failed to retreive information about the PR's latest commit`)
   }
@@ -74,7 +76,14 @@ async function mergePr() {
     return
   }
 
-  if (pr.rollupState === '') await githubOps.merge(pr.number)
+  if (pr.checksArePositive) {
+    console.log('merging')
+    await githubOps.merge(pr.number)
+    return
+  }
+
+  console.log('using #automerge')
+  await githubOps.addPrComment(pr.number, '#automerge')
 }
 
 async function listMerged(args: Arguments) {
@@ -115,11 +124,14 @@ async function info() {
       }
 
       console.log(
-        `${pr.rollupState} at ${headIndication}${pr.lastCommit.abbreviatedOid}: ${pr.lastCommit.message.substr(0, 60)}`,
+        `${pr.rollupState || ''} at ${headIndication}${pr.lastCommit.abbreviatedOid}: ${pr.lastCommit.message.substr(
+          0,
+          60,
+        )}`.trim(),
       )
     }
 
-    for (const c of pr.checks) {
+    for (const c of pr.checks || []) {
       console.log(`  - ${c.state} ${c.url}\n    ${c.description}\n`)
     }
     console.log()
