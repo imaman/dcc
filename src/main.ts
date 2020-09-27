@@ -150,10 +150,10 @@ yargs
   })
   .command('info', 'Vital signs of the current PR', a => a, launch(info))
   .command('push', 'push your branch', a => a, launch(push))
-  .command('prs', 'List currently open PRs', a => a, launch(listPrs))
+  .command('ongoing', 'List currently open PRs', a => a, launch(listPrs))
   .command('merge', 'Merge the current PR', a => a, launch(mergePr))
   .command(
-    'prs-recent',
+    'closed',
     'List recently merged PRs',
     yargs =>
       yargs.option('user', {
@@ -171,6 +171,7 @@ yargs
         alias: 't',
         describe: 'A one line summary of this PR',
         type: 'string',
+        demandOption: true,
       }),
     launch(createPr),
   )
