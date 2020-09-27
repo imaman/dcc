@@ -90,11 +90,10 @@ export class GraphqlOps {
     const ordinal = d ? d.ordinal : -1
     const hasConflicts = pr.mergeable !== 'MERGEABLE'
 
-    console.log('commit=' + JSON.stringify(commit, null, 2))
     const rollupState = commit?.statusCheckRollup?.state
     const checksArePositive = rollupState === 'SUCCESS'
     const checksAreNegative = rollupState === 'ERROR' || rollupState === 'FAILURE'
-    const rollupStateIsMissing = rollupState === null
+    const rollupStateIsMissing = !rollupState
     const checks = commit?.status?.contexts?.map(c => ({
       state: c.state,
       description: c.description,
