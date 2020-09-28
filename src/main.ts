@@ -66,7 +66,7 @@ async function listPrs() {
   }
 }
 
-async function mergePr() {
+async function submit() {
   // TODO(imaman): auto-create a PR if one has not been created?
   // TODO(imaman): if only one commit from master, take it as the PR title?
   await gitOps.notOnMainBranch()
@@ -116,13 +116,13 @@ async function listMerged(args: Arguments) {
   }
 }
 
-async function push() {
+async function upload(args: Arguments) {
   await gitOps.notOnMainBranch()
   await gitOps.push()
-}
 
-async function createPr(args: Arguments) {
-  await gitOps.notOnMainBranch()
+  if (!args.title) {
+    return
+  }
 
   const currentPr = await graphqlOps.getCurrentPr()
   if (currentPr) {
@@ -168,7 +168,7 @@ async function info() {
 }
 
 const argv = yargs
-  .usage('<cmd> [options]')
+  .usage('<command> [options]')
   .version('1.0.0')
   .option('dir', {
     alias: 'd',
@@ -176,24 +176,24 @@ const argv = yargs
     type: 'string',
   })
   .command('info', 'Vital signs of the current PR', a => a, launch(info))
-  .command('push', 'push your branch', a => a, launch(push))
+  // .command('push', 'push your branch', a => a, launch(push))
   .command(
-    'pr [options]',
-    'Creates a PR',
+    'upload',
+    'pushes changes to gitub (creates a PR, if a title is specified)',
     yargs =>
       yargs.option('title', {
         alias: 't',
-        describe: 'A one line summary of this PR',
         type: 'string',
-        demandOption: true,
+        describe: 'A one line summary of this PR',
+        default: '',
       }),
-    launch(createPr),
+    launch(upload),
   )
+  .command('submit', 'Merge the current PR', a => a, launch(submit))
   .command('catch-up', 'merge recent changes', a => a, launch(catchUp))
-  .command('ongoing', 'List currently open PRs', a => a, launch(listPrs))
-  .command('merge', 'Merge the current PR', a => a, launch(mergePr))
+  .command('list-ongoing', 'List currently open PRs', a => a, launch(listPrs))
   .command(
-    'closed',
+    'list-closed',
     'List recently merged PRs',
     yargs =>
       yargs.option('user', {
