@@ -168,7 +168,7 @@ async function info() {
 }
 
 const argv = yargs
-  .usage('<cmd> [options]')
+  .usage('<command> [options]')
   .version('1.0.0')
   .option('dir', {
     alias: 'd',
