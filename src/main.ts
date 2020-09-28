@@ -23,6 +23,11 @@ const gitOps = new GitOps(git())
 const githubOps = new GithubOps(octoKit, gitOps)
 const graphqlOps = new GraphqlOps(token, gitOps)
 
+function print(...args: string[]) {
+  /* eslint-disable-next-line no-console */
+  console.log(...args)
+}
+
 function format(s: string, n: number) {
   if (s.length > n) {
     return s.substr(0, n)
@@ -40,11 +45,10 @@ function launch(f: (a: Arguments) => Promise<void>) {
   }
 }
 
-/* eslint-disable no-console */
 async function listPrs() {
   const d = await githubOps.listPrs()
   for (const curr of d) {
-    console.log(
+    print(
       `${curr.updatedAt} ${('#' + curr.number).padStart(6)} ${format(curr.user, 10)} ${format(curr.title, 60)} ${
         curr.url
       }`,
@@ -52,7 +56,6 @@ async function listPrs() {
   }
 }
 
-/* eslint-disable no-console */
 async function mergePr() {
   // TODO(imaman): auto-create a PR if one has not been created?
   // TODO(imaman): if only one commit from master, take it as the PR title?
@@ -60,7 +63,7 @@ async function mergePr() {
   await gitOps.notOnMaster()
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
-    console.log(`No PR was found for the current branch (use "dcc pr" to create one)`)
+    print(`No PR was found for the current branch (use "dcc pr" to create one)`)
     return
   }
 
@@ -71,23 +74,23 @@ async function mergePr() {
   }
 
   if (pr.lastCommit.ordinal !== 0) {
-    console.log(`You have local changes that were not pushed to the PR`)
+    print(`You have local changes that were not pushed to the PR`)
     return
   }
 
   if (pr.mergeBlockerFound) {
-    console.log(`The PR cannot be merged at this point (use "dcc info" to see why)`)
+    print(`The PR cannot be merged at this point (use "dcc info" to see why)`)
     return
   }
 
   // TODO(imaman): pr.rollupStateIsMissing is valid only if no required checks are defined
   if (pr.checksArePositive || pr.rollupStateIsMissing) {
-    console.log('merging')
+    print('merging')
     await githubOps.merge(pr.number)
     return
   }
 
-  console.log('using #automerge')
+  print('using #automerge')
   await githubOps.addPrComment(pr.number, '#automerge')
 }
 
@@ -95,7 +98,7 @@ async function listMerged(args: Arguments) {
   const d = await githubOps.listMerged(args.user)
 
   for (const curr of d) {
-    console.log(
+    print(
       `${curr.mergedAt} ${('#' + curr.number).padStart(6)} ${format(curr.user, 10)} ${format(curr.title, 60)} ${
         curr.url
       }`,
@@ -119,13 +122,13 @@ async function info() {
   // TODO(imaman): should show info about closed PR if still on that branch (think about the exact UX that is needed here)
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
-    console.log('No PR was created for this branch')
+    print('No PR was created for this branch')
   } else {
-    console.log(`PR #${pr.number}: ${pr.title}`)
-    console.log(pr.url)
-    console.log(`Can be merged? ${pr.mergeBlockerFound ? 'No' : 'Yes'}`)
+    print(`PR #${pr.number}: ${pr.title}`)
+    print(pr.url)
+    print(`Can be merged? ${pr.mergeBlockerFound ? 'No' : 'Yes'}`)
     if (pr.conflicts) {
-      console.log(`Merge conflicts were found`)
+      print(`Merge conflicts were found`)
     }
     if (pr.lastCommit) {
       let headIndication = ''
@@ -133,7 +136,7 @@ async function info() {
         headIndication = '(HEAD' + (pr.lastCommit.ordinal ? `~${pr.lastCommit.ordinal}` : '') + ') '
       }
 
-      console.log(
+      print(
         `${pr.rollupState || ''} at ${headIndication}${pr.lastCommit.abbreviatedOid}: ${pr.lastCommit.message.substr(
           0,
           60,
@@ -142,9 +145,9 @@ async function info() {
     }
 
     for (const c of pr.checks || []) {
-      console.log(`  - ${c.state} ${c.url}\n    ${c.description}\n`)
+      print(`  - ${c.state} ${c.url}\n    ${c.description}\n`)
     }
-    console.log()
+    print()
   }
 }
 
