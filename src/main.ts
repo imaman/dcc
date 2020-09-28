@@ -149,8 +149,6 @@ async function info() {
   }
 }
 
-// TODO(imaman): show help when no command is given
-
 /* tslint:disable:no-shadowed-variable no-unused-expression */
 const argv = yargs
   .usage('<cmd> [options]')
