@@ -36,7 +36,7 @@ function stopMe(message: string) {
 }
 
 export class GitOps {
-  constructor(private readonly git: SimpleGit) {}
+  constructor(private readonly git: SimpleGit, private readonly mainBranch = 'master') {}
 
   async describeCommit(sha: string): Promise<CommitInfo | undefined> {
     const log = await this.git.log()
@@ -49,6 +49,11 @@ export class GitOps {
     return { ordinal: index, data }
   }
 
+  async switchToMainBranch(): Promise<void> {
+    await this.noUncommittedChanges()
+    await this.git.checkout(this.mainBranch)
+  }
+
   async getBranch(): Promise<BranchInfo> {
     const bs = await this.git.branch(['-vv'])
     return bs.branches[bs.current]
@@ -58,6 +63,13 @@ export class GitOps {
     const d = await this.git.diffSummary()
     if (d.files.length) {
       stopMe('you have uncommitted changes')
+    }
+  }
+
+  async notOnMainBranch(): Promise<void> {
+    const summ = await this.git.branch([])
+    if (summ.current === this.mainBranch) {
+      stopMe(`cannot be carried out when on branch '${summ.current}'`)
     }
   }
 
@@ -113,5 +125,17 @@ export class GitOps {
     }
 
     return repos[0]
+  }
+
+  async pull(): Promise<void> {
+    await this.git.pull()
+  }
+
+  async checkout(branchName: string): Promise<void> {
+    await this.git.checkout(branchName)
+  }
+
+  async mergeMainBranch(): Promise<void> {
+    await this.git.merge([this.mainBranch])
   }
 }
