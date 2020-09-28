@@ -149,7 +149,6 @@ async function info() {
   }
 }
 
-/* tslint:disable:no-shadowed-variable no-unused-expression */
 const argv = yargs
   .usage('<cmd> [options]')
   .version('1.0.0')
