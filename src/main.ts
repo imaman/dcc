@@ -152,10 +152,9 @@ async function info() {
 // TODO(imaman): show help when no command is given
 
 /* tslint:disable:no-shadowed-variable no-unused-expression */
-yargs
+const argv = yargs
   .usage('<cmd> [options]')
   .version('1.0.0')
-  .strict()
   .option('dir', {
     alias: 'd',
     describe: 'directroy to run at',
@@ -189,5 +188,10 @@ yargs
       }),
     launch(createPr),
   )
+  .strict()
   .help()
   .showHelpOnFail(false, 'Specify --help for available options').argv
+
+if (!argv._[0]) {
+  yargs.showHelp()
+}
