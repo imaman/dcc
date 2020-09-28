@@ -180,7 +180,7 @@ const argv = yargs
   // .command('push', 'push your branch', a => a, launch(push))
   .command(
     'upload',
-    'pushes changes to gitub (creates a PR, if a title is specified)',
+    'Push changes to Gitub (creates a PR, if a title is specified)',
     yargs =>
       yargs.option('title', {
         alias: 't',
@@ -190,8 +190,13 @@ const argv = yargs
       }),
     launch(upload),
   )
-  .command('submit', 'Merge the current PR', a => a, launch(submit))
-  .command('catch-up', 'merge recent changes', a => a, launch(catchUp))
+  .command('submit', 'Merge the current PR into the main branch', a => a, launch(submit))
+  .command(
+    'catch-up',
+    'Pull most recent changes into the main branch and into the current one',
+    a => a,
+    launch(catchUp),
+  )
   .command('list-ongoing', 'List currently open PRs', a => a, launch(listPrs))
   .command(
     'list-closed',
