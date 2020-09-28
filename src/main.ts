@@ -104,6 +104,7 @@ async function listMerged(args: Arguments) {
 }
 
 async function push() {
+  await gitOps.notOnMaster()
   // TODO(imaman): not on master
   await gitOps.push()
 }

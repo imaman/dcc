@@ -61,6 +61,13 @@ export class GitOps {
     }
   }
 
+  async notOnMaster(): Promise<void> {
+    const summ = await this.git.branch([])
+    if (summ.current === 'master') {
+      stopMe(`cannot be carried out when on branch '${summ.current}'`)
+    }
+  }
+
   async push(): Promise<void> {
     await this.noUncommittedChanges()
     const b = await this.getBranch()
