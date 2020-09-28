@@ -1,6 +1,6 @@
 {
-  "name": "@imaman/dcc",
-  "version": "1.0.0",
+  "name": "dev-control-center",
+  "version": "0.2.0",
   "description": "",
   "main": "index.js",
   "bin": {
