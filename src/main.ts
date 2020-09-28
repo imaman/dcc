@@ -60,7 +60,7 @@ async function mergePr() {
   // TODO(imaman): auto-create a PR if one has not been created?
   // TODO(imaman): if only one commit from master, take it as the PR title?
   // TODO(imaman): should switch back to master before returning?
-  await gitOps.notOnMaster()
+  await gitOps.notOnMainBranch()
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     print(`No PR was found for the current branch (use "dcc pr" to create one)`)
@@ -85,13 +85,14 @@ async function mergePr() {
 
   // TODO(imaman): pr.rollupStateIsMissing is valid only if no required checks are defined
   if (pr.checksArePositive || pr.rollupStateIsMissing) {
-    print('merging')
     await githubOps.merge(pr.number)
+    print('merged')
+    gitOps.switchToMainBranch()
     return
   }
 
-  print('using #automerge')
   await githubOps.addPrComment(pr.number, '#automerge')
+  print('#automerge statred')
 }
 
 async function listMerged(args: Arguments) {
@@ -107,12 +108,12 @@ async function listMerged(args: Arguments) {
 }
 
 async function push() {
-  await gitOps.notOnMaster()
+  await gitOps.notOnMainBranch()
   await gitOps.push()
 }
 
 async function createPr(args: Arguments) {
-  await gitOps.notOnMaster()
+  await gitOps.notOnMainBranch()
   // TODO(imaman): allow updating the PR title if one has already been created
   await githubOps.createPr(args.title)
 }

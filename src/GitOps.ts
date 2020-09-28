@@ -36,7 +36,7 @@ function stopMe(message: string) {
 }
 
 export class GitOps {
-  constructor(private readonly git: SimpleGit) {}
+  constructor(private readonly git: SimpleGit, private readonly mainBranch = 'master') {}
 
   async describeCommit(sha: string): Promise<CommitInfo | undefined> {
     const log = await this.git.log()
@@ -47,6 +47,11 @@ export class GitOps {
 
     const data = log.all[index]
     return { ordinal: index, data }
+  }
+
+  async switchToMainBranch(): Promise<void> {
+    await this.noUncommittedChanges()
+    await this.git.checkout(this.mainBranch)
   }
 
   async getBranch(): Promise<BranchInfo> {
@@ -61,9 +66,9 @@ export class GitOps {
     }
   }
 
-  async notOnMaster(): Promise<void> {
+  async notOnMainBranch(): Promise<void> {
     const summ = await this.git.branch([])
-    if (summ.current === 'master') {
+    if (summ.current === this.mainBranch) {
       stopMe(`cannot be carried out when on branch '${summ.current}'`)
     }
   }
