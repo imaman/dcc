@@ -173,6 +173,10 @@ export class GithubOps {
     return prs
   }
 
+  async updatePrTitle(prNumber: number, newTitle: string): Promise<void> {
+    const b = await this.gitOps.getRepo()
+    await this.kit.pulls.update({ owner: b.owner, repo: b.name, pull_number: prNumber, title: newTitle })
+  }
   async createPr(title: string): Promise<void> {
     this.gitOps.noUncommittedChanges()
     this.gitOps.push()

@@ -123,8 +123,14 @@ async function push() {
 
 async function createPr(args: Arguments) {
   await gitOps.notOnMainBranch()
+
+  const currentPr = await graphqlOps.getCurrentPr()
+  if (currentPr) {
+    await githubOps.updatePrTitle(currentPr.number, args.title)
+  } else {
+    await githubOps.createPr(args.title)
+  }
   // TODO(imaman): allow updating the PR title if one has already been created
-  await githubOps.createPr(args.title)
 }
 
 async function info() {
