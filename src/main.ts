@@ -183,8 +183,8 @@ const argv = yargs
     yargs =>
       yargs.option('title', {
         alias: 't',
-        describe: 'A one line summary of this PR',
         type: 'string',
+        describe: 'A one line summary of this PR',
         default: '',
       }),
     launch(upload),
