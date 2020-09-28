@@ -185,7 +185,7 @@ const argv = yargs
         alias: 't',
         describe: 'A one line summary of this PR',
         type: 'string',
-        demandOption: true,
+        default: '',
       }),
     launch(upload),
   )
