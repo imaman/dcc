@@ -130,7 +130,6 @@ async function createPr(args: Arguments) {
   } else {
     await githubOps.createPr(args.title)
   }
-  // TODO(imaman): allow updating the PR title if one has already been created
 }
 
 async function info() {
