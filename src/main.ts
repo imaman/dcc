@@ -45,6 +45,16 @@ function launch(f: (a: Arguments) => Promise<void>) {
   }
 }
 
+async function catchUp() {
+  await gitOps.notOnMainBranch()
+  const { name } = await gitOps.getBranch()
+  await gitOps.noUncommittedChanges()
+  await gitOps.switchToMainBranch()
+  await gitOps.pull()
+  await gitOps.checkout(name)
+  await gitOps.mergeMainBranch()
+}
+
 async function listPrs() {
   const d = await githubOps.listPrs()
   for (const curr of d) {
@@ -59,7 +69,6 @@ async function listPrs() {
 async function mergePr() {
   // TODO(imaman): auto-create a PR if one has not been created?
   // TODO(imaman): if only one commit from master, take it as the PR title?
-  // TODO(imaman): should switch back to master before returning?
   await gitOps.notOnMainBranch()
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
@@ -87,7 +96,7 @@ async function mergePr() {
   if (pr.checksArePositive || pr.rollupStateIsMissing) {
     await githubOps.merge(pr.number)
     print('merged')
-    gitOps.switchToMainBranch()
+    await gitOps.switchToMainBranch()
     return
   }
 
@@ -167,6 +176,19 @@ yargs
   // TODO(imaman): add a sync command to fetch master and merge it in.
   .command('info', 'Vital signs of the current PR', a => a, launch(info))
   .command('push', 'push your branch', a => a, launch(push))
+  .command(
+    'pr [options]',
+    'Creates a PR',
+    yargs =>
+      yargs.option('title', {
+        alias: 't',
+        describe: 'A one line summary of this PR',
+        type: 'string',
+        demandOption: true,
+      }),
+    launch(createPr),
+  )
+  .command('catch-up', 'merge recent changes', a => a, launch(catchUp))
   .command('ongoing', 'List currently open PRs', a => a, launch(listPrs))
   .command('merge', 'Merge the current PR', a => a, launch(mergePr))
   .command(
@@ -179,18 +201,6 @@ yargs
         type: 'string',
       }),
     launch(listMerged),
-  )
-  .command(
-    'pr [options]',
-    'Creates a PR',
-    yargs =>
-      yargs.option('title', {
-        alias: 't',
-        describe: 'A one line summary of this PR',
-        type: 'string',
-        demandOption: true,
-      }),
-    launch(createPr),
   )
   .help()
   .showHelpOnFail(false, 'Specify --help for available options').argv

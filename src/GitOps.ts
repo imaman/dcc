@@ -126,4 +126,16 @@ export class GitOps {
 
     return repos[0]
   }
+
+  async pull(): Promise<void> {
+    await this.git.pull()
+  }
+
+  async checkout(branchName: string): Promise<void> {
+    await this.git.checkout(branchName)
+  }
+
+  async mergeMainBranch(): Promise<void> {
+    await this.git.merge([this.mainBranch])
+  }
 }
