@@ -176,7 +176,6 @@ const argv = yargs
     describe: 'directroy to run at',
     type: 'string',
   })
-  // TODO(imaman): add a sync command to fetch master and merge it in.
   .command('info', 'Vital signs of the current PR', a => a, launch(info))
   .command('push', 'push your branch', a => a, launch(push))
   .command(
