@@ -49,8 +49,8 @@ function launch(f: (a: Arguments) => Promise<void>) {
 async function catchUp() {
   await gitOps.notOnMainBranch()
   await gitOps.noUncommittedChanges()
-  await gitOps.fetch('origin', this.gitOps.mainBranch)
-  await gitOps.merge('origin', this.gitOps.mainBranch)
+  await gitOps.fetch('origin', gitOps.mainBranch)
+  await gitOps.merge('origin', gitOps.mainBranch)
 }
 
 async function listOngoing() {
