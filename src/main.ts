@@ -178,9 +178,10 @@ async function info() {
   }
 }
 
+const currentVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8')).version
 const argv = yargs
   .usage('<command> [options]')
-  .version('1.0.0')
+  .version(currentVersion)
   .option('dir', {
     alias: 'd',
     describe: 'directroy to run at',
