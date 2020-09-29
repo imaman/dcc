@@ -105,7 +105,7 @@ async function submit() {
   print('#automerge statred')
 }
 
-async function listMerged(args: Arguments) {
+async function listClosed(args: Arguments) {
   const d = await githubOps.listMerged(args.user)
 
   for (const curr of d) {
@@ -207,7 +207,7 @@ const argv = yargs
         describe: 'Shows only PR from that GitHub user ID. If omiited shows from all users.',
         type: 'string',
       }),
-    launch(listMerged),
+    launch(listClosed),
   )
   .strict()
   .help()
