@@ -36,7 +36,7 @@ function stopMe(message: string) {
 }
 
 export class GitOps {
-  constructor(private readonly git: SimpleGit, private readonly mainBranch = 'master') {}
+  constructor(private readonly git: SimpleGit, readonly mainBranch = 'master') {}
 
   async describeCommit(sha: string): Promise<CommitInfo | undefined> {
     const log = await this.git.log()
@@ -127,15 +127,15 @@ export class GitOps {
     return repos[0]
   }
 
-  async pull(): Promise<void> {
-    await this.git.pull()
+  async fetch(remoteName: string, branchName: string): Promise<void> {
+    await this.git.fetch(remoteName, branchName)
   }
 
   async checkout(branchName: string): Promise<void> {
     await this.git.checkout(branchName)
   }
 
-  async mergeMainBranch(): Promise<void> {
-    await this.git.merge([this.mainBranch])
+  async merge(remoteName: string, branchName: string): Promise<void> {
+    await this.git.merge([`${remoteName}/${branchName}`])
   }
 }
