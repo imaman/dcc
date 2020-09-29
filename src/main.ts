@@ -94,7 +94,7 @@ async function submit() {
   }
 
   if (pr.mergeBlockerFound) {
-    print(`The PR cannot be merged at this point (use "dcc info" to see why)`)
+    print(`The PR cannot be merged at this point (use "dcc status" to see why)`)
     return
   }
 
@@ -178,6 +178,16 @@ async function info() {
   }
 }
 
+// Fix this: running dcc status when checks are still in 'expected' state, I get a "yes" for "can be merged?"
+// $ dcc status
+// PR #43: introduce caching of definitions
+// https://github.com/wix-private/wix-dx/pull/43
+// Can be merged? Yes
+// at (HEAD) dae1010: tsc 4.0.3
+//
+// Similarly, when running 'dcc submit' at this stage it tries directly to merge (instead of doing '#automerge').
+// Only when the checks state has changed to PENDING did 'dcc submit' do '#automerge'
+
 const currentVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8')).version
 const argv = yargs
   .usage('<command> [options]')
@@ -187,6 +197,7 @@ const argv = yargs
     describe: 'directroy to run at',
     type: 'string',
   })
+  // TODO(imaman): make it the default action
   .command('status', 'Show the status of the current PR', a => a, launch(info))
   .command(
     'upload',
