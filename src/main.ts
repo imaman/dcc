@@ -48,12 +48,9 @@ function launch(f: (a: Arguments) => Promise<void>) {
 
 async function catchUp() {
   await gitOps.notOnMainBranch()
-  const { name } = await gitOps.getBranch()
   await gitOps.noUncommittedChanges()
-  await gitOps.switchToMainBranch()
-  await gitOps.pull()
-  await gitOps.checkout(name)
-  await gitOps.mergeMainBranch()
+  await gitOps.fetch('origin', this.gitOps.mainBranch)
+  await gitOps.merge('origin', this.gitOps.mainBranch)
 }
 
 async function listPrs() {
