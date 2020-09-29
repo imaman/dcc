@@ -53,7 +53,7 @@ async function catchUp() {
   await gitOps.merge('origin', this.gitOps.mainBranch)
 }
 
-async function listPrs() {
+async function listOngoing() {
   const d = await githubOps.listPrs()
   for (const curr of d) {
     print(
@@ -194,7 +194,7 @@ const argv = yargs
     a => a,
     launch(catchUp),
   )
-  .command('list-ongoing', 'List currently open PRs', a => a, launch(listPrs))
+  .command('list-ongoing', 'List currently open PRs', a => a, launch(listOngoing))
   .command(
     'list-closed',
     'List recently merged PRs',
