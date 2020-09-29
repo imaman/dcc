@@ -12,7 +12,7 @@ import { Arguments } from 'yargs'
 
 import { GithubOps } from './GithubOps'
 import { GitOps } from './GitOps'
-import { GraphqlOps } from './gql'
+import { CurrentPrInfo, GraphqlOps } from './gql'
 
 const token = fs
   .readFileSync(path.resolve(__dirname, '../.conf'), 'utf-8')
@@ -64,23 +64,27 @@ async function listOngoing() {
   }
 }
 
+function prIsUpToDate(pr: CurrentPrInfo) {
+  if (!pr.lastCommit) {
+    throw new Error(`Failed to retreive information about the PR's latest commit`)
+  }
+
+  return pr.lastCommit.ordinal === 0
+}
+
 async function submit() {
   // TODO(imaman): auto-create a PR if one has not been created?
   // TODO(imaman): if only one commit from master, take it as the PR title?
   await gitOps.notOnMainBranch()
+  await gitOps.noUncommittedChanges()
+
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     print(`No PR was found for the current branch (use "dcc pr" to create one)`)
     return
   }
 
-  gitOps.noUncommittedChanges()
-
-  if (!pr.lastCommit) {
-    throw new Error(`Failed to retreive information about the PR's latest commit`)
-  }
-
-  if (pr.lastCommit.ordinal !== 0) {
+  if (!prIsUpToDate(pr)) {
     print(`You have local changes that were not pushed to the PR`)
     return
   }
@@ -116,7 +120,12 @@ async function listClosed(args: Arguments) {
 
 async function upload(args: Arguments) {
   await gitOps.notOnMainBranch()
-  await gitOps.push()
+
+  const pr = await graphqlOps.getCurrentPr()
+  if (!pr || !prIsUpToDate(pr)) {
+    print('Pushing changes')
+    await gitOps.push()
+  }
 
   if (!args.title) {
     return
