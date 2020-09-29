@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import * as fs from 'fs'
 import * as path from 'path'
+import * as os from 'os'
 import { Octokit } from '@octokit/rest'
 
 import * as sourceMapSupport from 'source-map-support'
@@ -14,10 +15,13 @@ import { GithubOps } from './GithubOps'
 import { GitOps } from './GitOps'
 import { CurrentPrInfo, GraphqlOps } from './gql'
 
-const token = fs
-  .readFileSync(path.resolve(__dirname, '../.conf'), 'utf-8')
-  .split('\n')[0]
-  .trim()
+const confFile = path.resolve(os.homedir(), './.dccrc.json')
+const token = JSON.parse(fs.readFileSync(confFile, 'utf-8')).token
+
+if (!token) {
+  throw new Error(`Missing "token" value in ${confFile}`)
+}
+
 const octoKit = new Octokit({ auth: token })
 
 const gitOps = new GitOps(git())
