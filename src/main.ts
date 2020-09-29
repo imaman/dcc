@@ -186,11 +186,10 @@ const argv = yargs
     describe: 'directroy to run at',
     type: 'string',
   })
-  .command('info', 'Vital signs of the current PR', a => a, launch(info))
-  // .command('push', 'push your branch', a => a, launch(push))
+  .command('status', 'Show the status of the current PR', a => a, launch(info))
   .command(
     'upload',
-    'Push changes to Gitub (creates a PR, if a title is specified)',
+    'Push your changes to Gitub (creates a PR, if a title is specified)',
     yargs =>
       yargs.option('title', {
         alias: 't',
