@@ -209,6 +209,7 @@ const argv = yargs
         describe: 'A one line summary of this PR',
         default: '',
       }),
+    // TODO(imaman): add a -s option to do upload+submit
     launch(upload),
   )
   .command('submit', 'Merge the current PR into the main branch', a => a, launch(submit))
