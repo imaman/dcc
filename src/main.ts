@@ -94,7 +94,7 @@ async function submit() {
   }
 
   if (pr.mergeBlockerFound) {
-    print(`The PR cannot be merged at this point (use "dcc status" to see why)`)
+    print(`The PR cannot be merged at this point (use "dcc ${STATUS_COMMAND}" to see why)`)
     return
   }
 
@@ -141,6 +141,24 @@ async function upload(args: Arguments) {
   } else {
     await githubOps.createPr(args.title)
   }
+
+  if (!args.submit) {
+    return
+  }
+
+  logger.silly('waiting for uploaded content to be reflected back')
+  for (let i = 0; i < 5; ++i) {
+    const p = await graphqlOps.getCurrentPr()
+    logger.silly(`attempt #${i}: ordinal=${p?.lastCommit?.ordinal}`)
+    if (p?.lastCommit?.ordinal === 0) {
+      submit()
+      return
+    }
+
+    await new Promise(resolve => setTimeout(() => resolve(), i * 500))
+  }
+
+  throw new Error(`Something went wrong: uploaded commit was not shown on the PR so the PR was not submitted`)
 }
 
 async function info() {
@@ -218,13 +236,19 @@ yargs
     'upload',
     'Push your changes to Gitub (creates a PR, if a title is specified)',
     yargs =>
-      yargs.option('title', {
-        alias: 't',
-        type: 'string',
-        describe: 'A one line summary of this PR',
-        default: '',
-      }),
-    // TODO(imaman): add a -s option to do upload+submit
+      yargs
+        .option('title', {
+          alias: 't',
+          type: 'string',
+          describe: 'A one line summary of this PR',
+          default: '',
+        })
+        .option('submit', {
+          alias: 's',
+          type: 'boolean',
+          describe: 'Whether to also submit immediately after the upload',
+          default: '',
+        }),
     launch(upload),
   )
   .command('submit', 'Merge the current PR into the main branch', a => a, launch(submit))
