@@ -188,8 +188,12 @@ async function info() {
 // Similarly, when running 'dcc submit' at this stage it tries directly to merge (instead of doing '#automerge').
 // Only when the checks state has changed to PENDING did 'dcc submit' do '#automerge'
 
+const GENERIC_HELP_MESSAGE = 'Specify --help for available options'
+
+const STATUS_COMMAND = 'status'
+
 const currentVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8')).version
-const argv = yargs
+yargs
   .usage('<command> [options]')
   .version(currentVersion)
   .option('dir', {
@@ -197,8 +201,18 @@ const argv = yargs
     describe: 'directroy to run at',
     type: 'string',
   })
-  // TODO(imaman): make it the default action
-  .command('status', 'Show the status of the current PR', a => a, launch(info))
+  .command(
+    [STATUS_COMMAND, '*'],
+    'Show the status of the current PR',
+    a => a,
+    async argv => {
+      if (!argv._.length || argv._[0] === STATUS_COMMAND) {
+        await launch(info)(argv)
+      } else {
+        logger.info(`Unknown argument: ${argv._[0]}\n\n${GENERIC_HELP_MESSAGE}`)
+      }
+    },
+  )
   .command(
     'upload',
     'Push your changes to Gitub (creates a PR, if a title is specified)',
@@ -233,8 +247,4 @@ const argv = yargs
   )
   .strict()
   .help()
-  .showHelpOnFail(false, 'Specify --help for available options').argv
-
-if (!argv._[0]) {
-  yargs.showHelp()
-}
+  .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv
