@@ -4,19 +4,22 @@ import * as octokit from '@octokit/graphql'
 import { graphql } from '@octokit/graphql/dist-types/types'
 import { logger } from './logger'
 
+type MergeabilityStatus = 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
 export interface CurrentPrInfo {
   title: string
   number: number
-  conflicts: boolean
-  mergeBlockerFound: boolean
+  mergeabilityStatus: MergeabilityStatus
+  foundFailingRequiredChecks: boolean
+  hasRequiredStatusChecks: boolean
   url: string
   checksArePositive: boolean
   rollupState: string
   rollupStateIsMissing: boolean
-  checks: {
+  requiredChecks: {
     url: string
     description: string
     state: string
+    contextName: string
   }[]
   lastCommit?: {
     message: string
@@ -46,6 +49,17 @@ export class GraphqlOps {
     const q = `
     {
       repository(owner: "${repo.owner}", name: "${repo.name}") {
+        branchProtectionRules(last: 100) {
+          nodes {
+            matchingRefs(last: 100) {
+              nodes {
+                name
+              }
+            }
+            requiredStatusCheckContexts
+            requiresStatusChecks
+          }
+        }
         ref(qualifiedName: "refs/heads/${b.name}") {
           name
           associatedPullRequests(last: 10, states: OPEN) {
@@ -69,6 +83,7 @@ export class GraphqlOps {
                         state
                         targetUrl
                         description
+                        context
                       }
                     }
                   }
@@ -89,31 +104,63 @@ export class GraphqlOps {
       return undefined
     }
 
-    // TODO(imaman): do logging
+    const matchingRules = repository?.branchProtectionRules?.nodes?.filter(n =>
+      n.matchingRefs?.nodes?.find(({ name }) => name === this.gitOps.mainBranch),
+    )
+    const rulesWithRequireStatusChecks =
+      matchingRules?.filter(r => r.requiredStatusCheckContexts.length > 0 && r.requiresStatusChecks) || []
+
+    const requiredCheckContexts = new Set<string>(
+      rulesWithRequireStatusChecks.map(r => r.requiredStatusCheckContexts).flat(),
+    )
+
     const commit = pr?.commits?.nodes && pr?.commits?.nodes[0]?.commit
     const d = commit && (await this.gitOps.describeCommit(commit?.oid))
     const ordinal = d ? d.ordinal : -1
-    const hasConflicts = pr.mergeable !== 'MERGEABLE'
 
     const rollupState = commit?.statusCheckRollup?.state
     const checksArePositive = rollupState === 'SUCCESS'
-    const checksAreNegative = rollupState === 'ERROR' || rollupState === 'FAILURE'
     const rollupStateIsMissing = !rollupState
-    const checks = commit?.status?.contexts?.map(c => ({
-      state: c.state,
-      description: c.description,
-      url: c.targetUrl,
-    }))
-    return {
+    const checks =
+      commit?.status?.contexts?.map(c => ({
+        state: c.state,
+        description: c.description,
+        url: c.targetUrl,
+        contextName: c.context,
+      })) || []
+
+    const requiredChecks = checks.filter(c => requiredCheckContexts.has(c.contextName))
+
+    const received = new Set<string>(checks.map(c => c.contextName))
+    const missing = [...requiredCheckContexts].filter(curr => !received.has(curr))
+    for (const m of missing) {
+      requiredChecks.push({ state: 'UNKNOWN', description: '', url: '', contextName: m })
+    }
+
+    logger.silly(
+      `analysis of checks:\n${JSON.stringify(
+        { matchingRules, rulesWithRequireStatusChecks, requiredCheckContexts: [...requiredCheckContexts], missing },
+        null,
+        2,
+      )}`,
+    )
+
+    const hasRequiredStatusChecks = rulesWithRequireStatusChecks.length > 0
+    const foundFailingRequiredChecks = Boolean(requiredChecks.find(c => c.state === 'ERROR' || c.state === 'FAILURE'))
+    const mergeabilityStatus: MergeabilityStatus =
+      pr.mergeable === 'MERGEABLE' ? 'MERGEABLE' : pr.mergeable === 'CONFLICTING' ? 'CONFLICTING' : 'UNKNOWN'
+
+    const ret = {
       title: pr.title,
       number: pr.number,
-      conflicts: hasConflicts,
-      mergeBlockerFound: hasConflicts || checksAreNegative,
+      hasRequiredStatusChecks,
+      foundFailingRequiredChecks,
+      mergeabilityStatus,
       url: pr.url,
       checksArePositive,
       rollupState,
       rollupStateIsMissing,
-      checks,
+      requiredChecks,
       lastCommit: commit && {
         message: commit?.message,
         abbreviatedOid: commit?.abbreviatedOid,
@@ -121,5 +168,8 @@ export class GraphqlOps {
         oid: commit?.oid,
       },
     }
+
+    logger.silly('ret=\n' + JSON.stringify(ret, null, 2))
+    return ret
   }
 }
