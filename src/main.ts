@@ -93,13 +93,17 @@ async function submit() {
     return
   }
 
-  if (pr.mergeBlockerFound) {
-    print(`The PR cannot be merged at this point (use "dcc ${STATUS_COMMAND}" to see why)`)
+  if (pr.mergeabilityStatus === 'CONFLICTING') {
+    print(`This PR is blocked by merge conflicts`)
     return
   }
 
-  // TODO(imaman): pr.rollupStateIsMissing is valid only if no required checks are defined
-  if (pr.checksArePositive || pr.rollupStateIsMissing) {
+  if (pr.foundFailingRequiredChecks) {
+    print(`This PR is blocked by failing checks (use "dcc ${STATUS_COMMAND}" to get further details)`)
+    return
+  }
+
+  if (pr.checksArePositive || !pr.hasRequiredStatusChecks) {
     await githubOps.merge(pr.number)
     print('merged')
     await gitOps.switchToMainBranch()
@@ -161,7 +165,7 @@ async function upload(args: Arguments) {
   throw new Error(`Something went wrong: uploaded commit was not shown on the PR so the PR was not submitted`)
 }
 
-async function info() {
+async function status() {
   // TODO(imaman): should print whether there are local changes that need to be merged.
   // TODO(imaman): should show info about closed PR if still on that branch (think about the exact UX that is needed here)
   // TODO(imaman): show 'auto-merge' indication.
@@ -171,26 +175,21 @@ async function info() {
   } else {
     print(`PR #${pr.number}: ${pr.title}`)
     print(pr.url)
-    print(`Can be merged? ${pr.mergeBlockerFound ? 'No' : 'Yes'}`)
-    if (pr.conflicts) {
-      print(`Merge conflicts were found`)
-    }
     if (pr.lastCommit) {
       let headIndication = ''
       if (pr.lastCommit.ordinal >= 0) {
-        headIndication = '(HEAD' + (pr.lastCommit.ordinal ? `~${pr.lastCommit.ordinal}` : '') + ') '
+        headIndication = 'HEAD' + (pr.lastCommit.ordinal ? `~${pr.lastCommit.ordinal}` : '') + ': '
       }
 
       print(
-        `${pr.rollupState || ''} at ${headIndication}${pr.lastCommit.abbreviatedOid}: ${pr.lastCommit.message.substr(
-          0,
-          60,
-        )}`.trim(),
+        `Currently at ${headIndication}${pr.lastCommit.abbreviatedOid} "${pr.lastCommit.message.substr(0, 60)}"`.trim(),
       )
     }
 
-    for (const c of pr.checks || []) {
-      print(`  - ${c.state} ${c.url}\n    ${c.description}\n`)
+    print(`\nMeragability status: ${pr.mergeabilityStatus}`)
+    print('Checks:')
+    for (const c of pr.requiredChecks || []) {
+      print(`  - ${c.contextName}: ${c.state}\n    ${c.description}\n    ${c.url}\n`)
     }
     print()
   }
@@ -226,7 +225,7 @@ yargs
     async argv => {
       const commands = argv._
       if (!commands.length || commands[0] === STATUS_COMMAND) {
-        await launch(info)(argv)
+        await launch(status)(argv)
       } else {
         logger.info(`Unknown command: ${commands[0]}\n\n${GENERIC_HELP_MESSAGE}`)
       }
