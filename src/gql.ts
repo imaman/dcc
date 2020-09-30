@@ -2,6 +2,7 @@ import { GitOps } from './GitOps'
 import { createTokenAuth } from '@octokit/auth-token'
 import * as octokit from '@octokit/graphql'
 import { graphql } from '@octokit/graphql/dist-types/types'
+import { logger } from './logger'
 
 export interface CurrentPrInfo {
   title: string
@@ -79,6 +80,8 @@ export class GraphqlOps {
       }
     }`
     const { repository } = await this.authedGraphql(q)
+    logger.silly(`getCurrentPr(): q=\n${q}, resp=${JSON.stringify(repository, null, 2)}`)
+
     const nodes = repository?.ref?.associatedPullRequests?.nodes
     const pr = nodes && nodes[0]
 
@@ -120,28 +123,3 @@ export class GraphqlOps {
     }
   }
 }
-// async function main() {
-//   const token = fs.readFileSync('/home/imaman/code/imaman/dcc/.conf').toString().split('\n')[0].trim()
-
-//   const { repository } = await authedGraphql(`
-//   {
-//     repository(owner: "imaman", name: "dcc") {
-//       ref(qualifiedName: "refs/heads/merge") {
-//         name
-//         associatedPullRequests(last: 10, states: OPEN) {
-//           nodes {
-//             headRefName
-//             title
-//             number
-//           }
-//         }
-//       }
-//     }
-//   }
-//   `)
-
-//   return repository
-
-// }
-
-// main().then(c => console.log(JSON.stringify(c, null, 2))).catch(e => console.error('FAIL', e.stack || e))

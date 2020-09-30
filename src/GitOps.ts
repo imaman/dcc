@@ -1,5 +1,6 @@
 import { SimpleGit } from 'simple-git/promise'
 import * as child_process from 'child_process'
+import { logger } from './logger'
 
 interface BranchInfo {
   current: string
@@ -29,8 +30,7 @@ interface CommitInfo {
 }
 
 function stopMe(message: string) {
-  // eslint-disable-next-line no-console
-  console.log(message)
+  logger.info(message)
   // eslint-disable-next-line no-process-exit
   process.exit(-1)
 }
@@ -46,6 +46,7 @@ export class GitOps {
     }
 
     const data = log.all[index]
+    logger.silly(`describeCommit(${sha}) index=${index}, data=\n${JSON.stringify(data, null, 2)}`)
     return { ordinal: index, data }
   }
 

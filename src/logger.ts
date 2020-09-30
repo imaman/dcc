@@ -17,7 +17,7 @@ export const logger = winston.createLogger({
       ),
     }),
     new winston.transports.File({
-      filename: '.dcc.log',
+      filename: '/tmp/dcc.log',
       options: {
         flags: 'w',
       },

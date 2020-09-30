@@ -14,6 +14,7 @@ import { Arguments } from 'yargs'
 import { GithubOps } from './GithubOps'
 import { GitOps } from './GitOps'
 import { CurrentPrInfo, GraphqlOps } from './gql'
+import { logger } from './logger'
 
 const confFile = path.resolve(os.homedir(), './.dccrc.json')
 const token = JSON.parse(fs.readFileSync(confFile, 'utf-8')).token
@@ -29,8 +30,7 @@ const githubOps = new GithubOps(octoKit, gitOps)
 const graphqlOps = new GraphqlOps(token, gitOps)
 
 function print(...args: string[]) {
-  /* eslint-disable-next-line no-console */
-  console.log(...args)
+  logger.info(args.join(' '))
 }
 
 function format(s: string, n: number) {
@@ -94,7 +94,7 @@ async function submit() {
   }
 
   if (pr.mergeBlockerFound) {
-    print(`The PR cannot be merged at this point (use "dcc status" to see why)`)
+    print(`The PR cannot be merged at this point (use "dcc ${STATUS_COMMAND}" to see why)`)
     return
   }
 
@@ -141,6 +141,24 @@ async function upload(args: Arguments) {
   } else {
     await githubOps.createPr(args.title)
   }
+
+  if (!args.submit) {
+    return
+  }
+
+  logger.silly('waiting for uploaded content to be reflected back')
+  for (let i = 0; i < 5; ++i) {
+    const p = await graphqlOps.getCurrentPr()
+    logger.silly(`attempt #${i}: ordinal=${p?.lastCommit?.ordinal}`)
+    if (p?.lastCommit?.ordinal === 0) {
+      submit()
+      return
+    }
+
+    await new Promise(resolve => setTimeout(() => resolve(), i * 500))
+  }
+
+  throw new Error(`Something went wrong: uploaded commit was not shown on the PR so the PR was not submitted`)
 }
 
 async function info() {
@@ -188,8 +206,12 @@ async function info() {
 // Similarly, when running 'dcc submit' at this stage it tries directly to merge (instead of doing '#automerge').
 // Only when the checks state has changed to PENDING did 'dcc submit' do '#automerge'
 
+const GENERIC_HELP_MESSAGE = 'Specify --help for available options'
+
+const STATUS_COMMAND = 'status'
+
 const currentVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8')).version
-const argv = yargs
+yargs
   .usage('<command> [options]')
   .version(currentVersion)
   .option('dir', {
@@ -197,18 +219,36 @@ const argv = yargs
     describe: 'directroy to run at',
     type: 'string',
   })
-  // TODO(imaman): make it the default action
-  .command('status', 'Show the status of the current PR', a => a, launch(info))
+  .command(
+    [STATUS_COMMAND, '*'],
+    'Show the status of the current PR',
+    a => a,
+    async argv => {
+      const commands = argv._
+      if (!commands.length || commands[0] === STATUS_COMMAND) {
+        await launch(info)(argv)
+      } else {
+        logger.info(`Unknown command: ${commands[0]}\n\n${GENERIC_HELP_MESSAGE}`)
+      }
+    },
+  )
   .command(
     'upload',
     'Push your changes to Gitub (creates a PR, if a title is specified)',
     yargs =>
-      yargs.option('title', {
-        alias: 't',
-        type: 'string',
-        describe: 'A one line summary of this PR',
-        default: '',
-      }),
+      yargs
+        .option('title', {
+          alias: 't',
+          type: 'string',
+          describe: 'A one line summary of this PR',
+          default: '',
+        })
+        .option('submit', {
+          alias: 's',
+          type: 'boolean',
+          describe: 'Whether to also submit immediately after the upload',
+          default: '',
+        }),
     launch(upload),
   )
   .command('submit', 'Merge the current PR into the main branch', a => a, launch(submit))
@@ -232,8 +272,4 @@ const argv = yargs
   )
   .strict()
   .help()
-  .showHelpOnFail(false, 'Specify --help for available options').argv
-
-if (!argv._[0]) {
-  yargs.showHelp()
-}
+  .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv
