@@ -206,10 +206,11 @@ yargs
     'Show the status of the current PR',
     a => a,
     async argv => {
-      if (!argv._.length || argv._[0] === STATUS_COMMAND) {
+      const commands = argv._
+      if (!commands.length || commands[0] === STATUS_COMMAND) {
         await launch(info)(argv)
       } else {
-        logger.info(`Unknown argument: ${argv._[0]}\n\n${GENERIC_HELP_MESSAGE}`)
+        logger.info(`Unknown command: ${commands[0]}\n\n${GENERIC_HELP_MESSAGE}`)
       }
     },
   )
