@@ -14,6 +14,7 @@ import { Arguments } from 'yargs'
 import { GithubOps } from './GithubOps'
 import { GitOps } from './GitOps'
 import { CurrentPrInfo, GraphqlOps } from './gql'
+import { logger } from './logger'
 
 const confFile = path.resolve(os.homedir(), './.dccrc.json')
 const token = JSON.parse(fs.readFileSync(confFile, 'utf-8')).token
@@ -29,8 +30,7 @@ const githubOps = new GithubOps(octoKit, gitOps)
 const graphqlOps = new GraphqlOps(token, gitOps)
 
 function print(...args: string[]) {
-  /* eslint-disable-next-line no-console */
-  console.log(...args)
+  logger.info(args.join(' '))
 }
 
 function format(s: string, n: number) {

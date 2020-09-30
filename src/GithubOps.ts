@@ -1,5 +1,6 @@
 import { GitOps } from './GitOps'
 import { Octokit } from '@octokit/rest'
+import { logger } from './logger'
 
 interface PrInfo {
   url: string
@@ -63,33 +64,6 @@ export class GithubOps {
     }))
 
     return prs.filter(curr => curr.user === user)
-  }
-
-  async getCurrentPr(): Promise<PrInfo | undefined> {
-    const b = await this.gitOps.getBranch()
-    const [repo, user] = await Promise.all([this.gitOps.getRepo(), this.getUser()])
-
-    const q = `type:pr head:"${b.name}" author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`
-    const respB = await this.kit.search.issuesAndPullRequests({
-      q,
-    })
-
-    const prs = respB.data.items.map(curr => ({
-      user: curr.user.login,
-      title: curr.title,
-      url: `https://github.com/${repo.owner}/${repo.name}/pull/${curr.number}`,
-      body: curr.body,
-      updatedAt: curr.updated_at,
-      createdAt: curr.created_at,
-      number: curr.number,
-      state: curr.state,
-    }))
-
-    const filtered = prs.filter(curr => curr.user === user)
-    if (filtered.length !== 1) {
-      return undefined
-    }
-    return filtered[0]
   }
 
   async merge(prNumber: number): Promise<void> {
@@ -191,7 +165,7 @@ export class GithubOps {
     try {
       const resp = await this.kit.pulls.create(req)
       // eslint-disable-next-line no-console
-      console.log(`PR #${resp.data.number} created\n${resp.data.html_url}`)
+      logger.info(`PR #${resp.data.number} created\n${resp.data.html_url}`)
     } catch (err) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const x = err as any
@@ -206,7 +180,7 @@ export class GithubOps {
       }
 
       // eslint-disable-next-line no-console
-      console.log('PR already exists')
+      logger.info('PR already exists')
     }
   }
 }
