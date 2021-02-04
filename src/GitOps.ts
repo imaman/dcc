@@ -139,4 +139,9 @@ export class GitOps {
   async merge(remoteName: string, branchName: string): Promise<void> {
     await this.git.merge([`${remoteName}/${branchName}`])
   }
+
+  async getChangedFiles(remoteName: string): Promise<string[]> {
+    const diffSummary = await this.git.diffSummary([remoteName])
+    return diffSummary.files.map(it => it.file)
+  }
 }

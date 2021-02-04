@@ -68,6 +68,13 @@ async function listOngoing() {
   }
 }
 
+async function pending() {
+  const changedFiles = await gitOps.getChangedFiles('origin/master')
+  for (const curr of changedFiles) {
+    print(curr)
+  }
+}
+
 function prIsUpToDate(pr: CurrentPrInfo) {
   if (!pr.lastCommit) {
     throw new Error(`Failed to retreive information about the PR's latest commit`)
@@ -269,6 +276,7 @@ yargs
       }),
     launch(listClosed),
   )
+  .command('pending', 'List names of changes files (compared to origin/master)', a => a, launch(pending))
   .strict()
   .help()
   .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv
