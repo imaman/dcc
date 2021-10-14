@@ -52,5 +52,6 @@
     "tslint": "^5.20.0",
     "tslint-config-sevenval": "^2.0.0",
     "typescript": "^4.0.3"
-  }
+  },
+  "packageManager": "yarn@3.0.2"
 }
