@@ -31,11 +31,18 @@ interface CheckInfo {
 }
 
 interface MergedPrInfo {
-  mergedAt: string
+  mergedAt: string | null
   title: string
   number: number
   url: string
   user: string
+}
+
+function reify<T>(t: T | null | undefined): T {
+  if (t === null || t === undefined) {
+    throw new Error(`got a falsy value`)
+  }
+  return t
 }
 
 export class GithubOps {
@@ -53,7 +60,7 @@ export class GithubOps {
       q: `type:pr	author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`,
     })
     const prs = respB.data.items.map(curr => ({
-      user: curr.user.login,
+      user: reify(curr.user?.login),
       title: curr.title,
       url: `https://github.com/${repo.owner}/${repo.name}/pull/${curr.number}`,
       body: curr.body,
@@ -97,7 +104,7 @@ export class GithubOps {
     })
 
     const [status, branch] = await Promise.all([statusPromise, branchPromise])
-    const required = new Set<string>(branch.data.protection.required_status_checks.contexts)
+    const required = new Set<string>(reify(branch.data.protection.required_status_checks?.contexts))
     const statuses = status.data.statuses.map(s => ({
       context: s.context,
       required: required.has(s.context),
@@ -127,7 +134,7 @@ export class GithubOps {
       per_page: pageSize,
     })
     let prs = resp.data.map(curr => ({
-      user: curr.user.login,
+      user: reify(curr.user?.login),
       title: curr.title,
       url: `https://github.com/${r.owner}/${r.name}/pull/${curr.number}`,
       body: curr.body,

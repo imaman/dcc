@@ -166,7 +166,7 @@ async function upload(args: Arguments) {
       return
     }
 
-    await new Promise(resolve => setTimeout(() => resolve(), i * 500))
+    await new Promise<void>(resolve => setTimeout(() => resolve(), i * 500))
   }
 
   throw new Error(`Something went wrong: uploaded commit was not shown on the PR so the PR was not submitted`)
