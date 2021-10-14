@@ -38,6 +38,13 @@ interface MergedPrInfo {
   user: string
 }
 
+function reify<T>(t: T | null | undefined): T {
+  if (t === null || t === undefined) {
+    throw new Error(`got a falsy value`)
+  }
+  return t
+}
+
 export class GithubOps {
   constructor(private readonly kit: Octokit, private readonly gitOps: GitOps) {}
 
@@ -53,7 +60,7 @@ export class GithubOps {
       q: `type:pr	author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`,
     })
     const prs = respB.data.items.map(curr => ({
-      user: curr.user.login,
+      user: reify(curr.user?.login),
       title: curr.title,
       url: `https://github.com/${repo.owner}/${repo.name}/pull/${curr.number}`,
       body: curr.body,
@@ -97,7 +104,7 @@ export class GithubOps {
     })
 
     const [status, branch] = await Promise.all([statusPromise, branchPromise])
-    const required = new Set<string>(branch.data.protection.required_status_checks.contexts)
+    const required = new Set<string>(reify(branch.data.protection.required_status_checks?.contexts))
     const statuses = status.data.statuses.map(s => ({
       context: s.context,
       required: required.has(s.context),
@@ -127,14 +134,14 @@ export class GithubOps {
       per_page: pageSize,
     })
     let prs = resp.data.map(curr => ({
-      user: curr.user.login,
+      user: reify(curr.user?.login),
       title: curr.title,
       url: `https://github.com/${r.owner}/${r.name}/pull/${curr.number}`,
       body: curr.body,
       branch: curr.head.ref,
       updatedAt: curr.updated_at,
       createdAt: curr.created_at,
-      mergedAt: curr.merged_at,
+      mergedAt: reify(curr.merged_at),
       number: curr.number,
       state: curr.state,
     }))
