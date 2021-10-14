@@ -31,7 +31,7 @@ interface CheckInfo {
 }
 
 interface MergedPrInfo {
-  mergedAt: string
+  mergedAt: string | null
   title: string
   number: number
   url: string
@@ -141,7 +141,7 @@ export class GithubOps {
       branch: curr.head.ref,
       updatedAt: curr.updated_at,
       createdAt: curr.created_at,
-      mergedAt: reify(curr.merged_at),
+      mergedAt: curr.merged_at,
       number: curr.number,
       state: curr.state,
     }))
