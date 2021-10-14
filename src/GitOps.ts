@@ -1,9 +1,8 @@
-import { SimpleGit } from 'simple-git/promise'
+import { SimpleGit, BranchSummary } from 'simple-git/promise'
 import * as child_process from 'child_process'
 import { logger } from './logger'
 
 interface BranchInfo {
-  current: string
   name: string
   commit: string
   label: string
@@ -56,7 +55,7 @@ export class GitOps {
   }
 
   async getBranch(): Promise<BranchInfo> {
-    const bs = await this.git.branch(['-vv'])
+    const bs: BranchSummary = await this.git.branch(['-vv'])
     return bs.branches[bs.current]
   }
 
