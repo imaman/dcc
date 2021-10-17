@@ -199,7 +199,7 @@ export class GithubOps {
       owner: r.owner,
       repo: r.name,
       issue_number: issueNumber,
-      labels: [{ name: 'auto-merge' }, { name: 'squash' }],
+      labels: ['auto-merge', 'squash' ]
     })
   }
 }
