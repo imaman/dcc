@@ -169,10 +169,12 @@ export class GithubOps {
       repo: r.name,
       title,
     }
+
+    let issueNumber: number | undefined
     try {
       const resp = await this.kit.pulls.create(req)
-      // eslint-disable-next-line no-console
-      logger.info(`PR #${resp.data.number} created\n${resp.data.html_url}`)
+      issueNumber = resp.data.number
+      logger.info(`PR #${issueNumber} created\n${resp.data.html_url}`)
     } catch (err) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const x = err as any
@@ -186,8 +188,18 @@ export class GithubOps {
         throw new Error(`Failed to create PR\n${JSON.stringify(x, null, 2)}`)
       }
 
-      // eslint-disable-next-line no-console
       logger.info('PR already exists')
     }
+
+    if (issueNumber === undefined) {
+      throw new Error(`Falsy issue number`)
+    }
+
+    await this.kit.issues.addLabels({
+      owner: r.owner,
+      repo: r.name,
+      issue_number: issueNumber,
+      labels: [{ name: 'auto-merge' }, { name: 'squash' }],
+    })
   }
 }
