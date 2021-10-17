@@ -172,7 +172,14 @@ export class GithubOps {
 
     let issueNumber: number | undefined
     try {
-      const resp = await this.kit.pulls.create(req)
+      const resp = await this.kit.pulls.create({
+        base: 'master',
+        head: b.name,
+        owner: r.owner,
+        repo: r.name,
+        title,
+        
+      })
       issueNumber = resp.data.number
       logger.info(`PR #${issueNumber} created\n${resp.data.html_url}`)
     } catch (err) {
@@ -195,7 +202,7 @@ export class GithubOps {
       throw new Error(`Falsy issue number`)
     }
 
-    await this.kit.issues.addLabels({
+    await this.kit.issues.update({
       owner: r.owner,
       repo: r.name,
       issue_number: issueNumber,
