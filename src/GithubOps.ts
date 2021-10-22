@@ -46,7 +46,7 @@ function reify<T>(t: T | null | undefined): T {
 }
 
 export class GithubOps {
-  constructor(private readonly kit: Octokit, private readonly gitOps: GitOps) {}
+  constructor(private readonly kit: Octokit, private readonly gitOps: GitOps, private readonly prLabels: string[]) {}
 
   async getUser(): Promise<string> {
     const d = await this.kit.users.getAuthenticated()
@@ -197,7 +197,7 @@ export class GithubOps {
       owner: r.owner,
       repo: r.name,
       issue_number: issueNumber,
-      labels: ['auto-merge', 'squash'],
+      labels: this.prLabels,
     })
   }
 }

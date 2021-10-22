@@ -3,6 +3,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
 import { Octokit } from '@octokit/rest'
+import { z } from 'zod'
 
 import * as sourceMapSupport from 'source-map-support'
 sourceMapSupport.install()
@@ -16,8 +17,17 @@ import { GitOps } from './GitOps'
 import { CurrentPrInfo, GraphqlOps } from './gql'
 import { logger } from './logger'
 
+const DccConfigSchema = z.object({
+  token: z.string(),
+  prLabels: z
+    .string()
+    .array()
+    .optional(),
+})
+type DccConfig = z.infer<typeof DccConfigSchema>
+
 const confFile = path.resolve(os.homedir(), './.dccrc.json')
-const parsed = JSON.parse(fs.readFileSync(confFile, 'utf-8'))
+const parsed: DccConfig = DccConfigSchema.parse(JSON.parse(fs.readFileSync(confFile, 'utf-8')))
 const token = parsed.token
 
 if (!token) {
@@ -27,7 +37,7 @@ if (!token) {
 const octoKit = new Octokit({ auth: token })
 
 const gitOps = new GitOps(git())
-const githubOps = new GithubOps(octoKit, gitOps)
+const githubOps = new GithubOps(octoKit, gitOps, parsed.prLabels ?? [])
 const graphqlOps = new GraphqlOps(token, gitOps)
 
 function print(...args: string[]) {
