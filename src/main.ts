@@ -70,7 +70,8 @@ async function listOngoing() {
 }
 
 async function pending() {
-  const changedFiles = await gitOps.getChangedFiles('origin/master')
+  const mainBranch = await gitOps.mainBranch()
+  const changedFiles = await gitOps.getChangedFiles(`origin/${mainBranch}`)
   for (const curr of changedFiles) {
     print(curr)
   }
