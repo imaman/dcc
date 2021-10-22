@@ -216,8 +216,8 @@ type Rep = {
           name: string
         }[]
       }
-      requiredStatusCheckContexts: string[]
       requiresStatusChecks: boolean
+      requiredStatusCheckContexts: string[]
     }[]
   }
 }
