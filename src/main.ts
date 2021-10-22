@@ -53,8 +53,9 @@ function launch(f: (a: Arguments) => Promise<void>) {
 async function catchUp() {
   await gitOps.notOnMainBranch()
   await gitOps.noUncommittedChanges()
-  await gitOps.fetch('origin', gitOps.mainBranch)
-  await gitOps.merge('origin', gitOps.mainBranch)
+  const mainBranch = await gitOps.mainBranch()
+  await gitOps.fetch('origin', mainBranch)
+  await gitOps.merge('origin', mainBranch)
 }
 
 async function listOngoing() {
@@ -276,7 +277,7 @@ yargs
       }),
     launch(listClosed),
   )
-  .command('pending', 'List names of changes files (compared to origin/master)', a => a, launch(pending))
+  .command('pending', 'List names of changes files (compared to origin/<main-branch>)', a => a, launch(pending))
   .strict()
   .help()
   .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv
