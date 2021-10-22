@@ -17,7 +17,8 @@ import { CurrentPrInfo, GraphqlOps } from './gql'
 import { logger } from './logger'
 
 const confFile = path.resolve(os.homedir(), './.dccrc.json')
-const token = JSON.parse(fs.readFileSync(confFile, 'utf-8')).token
+const parsed = JSON.parse(fs.readFileSync(confFile, 'utf-8'))
+const token = parsed.token
 
 if (!token) {
   throw new Error(`Missing "token" value in ${confFile}`)
