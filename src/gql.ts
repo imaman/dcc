@@ -106,9 +106,11 @@ export class GraphqlOps {
       return undefined
     }
 
+    const mainBranch = await this.gitOps.mainBranch()
     const matchingRules = repository?.branchProtectionRules?.nodes?.filter(n =>
-      n.matchingRefs?.nodes?.find(({ name }) => name === this.gitOps.mainBranch),
+      n.matchingRefs?.nodes?.find(({ name }) => name === mainBranch),
     )
+
     const rulesWithRequireStatusChecks =
       matchingRules?.filter(r => r.requiredStatusCheckContexts.length > 0 && r.requiresStatusChecks) || []
 
