@@ -100,7 +100,7 @@ export class GithubOps {
     const branchPromise = await this.kit.repos.getBranch({
       owner: r.owner,
       repo: r.name,
-      branch: 'master',
+      branch: await this.gitOps.mainBranch(),
     })
 
     const [status, branch] = await Promise.all([statusPromise, branchPromise])
@@ -162,23 +162,14 @@ export class GithubOps {
     const b = await this.gitOps.getBranch()
     const r = await this.gitOps.getRepo()
 
-    const req = {
-      base: 'master',
-      head: b.name,
-      owner: r.owner,
-      repo: r.name,
-      title,
-    }
-
     let issueNumber: number | undefined
     try {
       const resp = await this.kit.pulls.create({
-        base: 'master',
+        base: await this.gitOps.mainBranch(),
         head: b.name,
         owner: r.owner,
         repo: r.name,
         title,
-        
       })
       issueNumber = resp.data.number
       logger.info(`PR #${issueNumber} created\n${resp.data.html_url}`)
@@ -206,7 +197,7 @@ export class GithubOps {
       owner: r.owner,
       repo: r.name,
       issue_number: issueNumber,
-      labels: ['auto-merge', 'squash' ]
+      labels: ['auto-merge', 'squash'],
     })
   }
 }
