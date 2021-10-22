@@ -94,7 +94,9 @@ export class GraphqlOps {
         }
       }
     }`
-    const { repository } = await this.authedGraphql(q)
+    const resp = await this.authedGraphql(q)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const repository: Rep = (resp as any).repository
     logger.silly(`getCurrentPr(): q=\n${q}, resp=${JSON.stringify(repository, null, 2)}`)
 
     const nodes = repository?.ref?.associatedPullRequests?.nodes
@@ -171,5 +173,49 @@ export class GraphqlOps {
 
     logger.silly('ret=\n' + JSON.stringify(ret, null, 2))
     return ret
+  }
+}
+
+type Rep = {
+  ref: {
+    associatedPullRequests: {
+      nodes: {
+        mergeable: string
+        title: string
+        number: number
+        url: string
+        commits: {
+          nodes: {
+            commit: {
+              message: string
+              oid: string
+              abbreviatedOid: string
+              statusCheckRollup: {
+                state: string
+              }
+              status: {
+                contexts: {
+                  state: string
+                  description: string
+                  targetUrl: string
+                  context: string
+                }[]
+              }
+            }
+          }[]
+        }
+      }[]
+    }
+  }
+  branchProtectionRules: {
+    nodes: {
+      matchingRefs: {
+        nodes: {
+          name: string
+        }[]
+      }
+      requiredStatusCheckContexts: string[]
+      requiresStatusChecks: boolean
+    }[]
   }
 }
