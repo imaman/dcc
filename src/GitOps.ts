@@ -1,6 +1,7 @@
 import { SimpleGit, BranchSummary } from 'simple-git/promise'
 import * as child_process from 'child_process'
 import { logger } from './logger'
+import * as execa from 'execa'
 
 interface BranchInfo {
   name: string
@@ -35,7 +36,32 @@ function stopMe(message: string) {
 }
 
 export class GitOps {
-  constructor(private readonly git: SimpleGit, readonly mainBranch = 'master') {}
+  constructor(private readonly git: SimpleGit) {}
+
+  async mainBranch(): Promise<string> {
+    const args = ['symbolic-ref', 'refs/remotes/origin/HEAD']
+    const command = `<git ${args.join(' ')}>`
+    const temp = await execa('git', args)
+    const stderr = temp.stderr.trim()
+    if (stderr.length) {
+      throw new Error(`Failed to get main branch. ${command} failed with: ${stderr}`)
+    }
+
+    const lines = temp.stdout.trim().split('\n')
+    if (lines.length !== 1) {
+      throw new Error(`Expected exactly one output line from ${command} but got: ${lines.join('\n')}`)
+    }
+    // refs/remotes/origin/main -> main
+    const parts = lines[0]
+      .split('/')
+      .map(at => at.trim())
+      .filter(Boolean)
+    if (parts.length !== 4) {
+      throw new Error(`Unexpected output from ${command}: ${lines[0]}`)
+    }
+
+    return parts[3]
+  }
 
   async describeCommit(sha: string): Promise<CommitInfo | undefined> {
     const log = await this.git.log()
@@ -51,7 +77,7 @@ export class GitOps {
 
   async switchToMainBranch(): Promise<void> {
     await this.noUncommittedChanges()
-    await this.git.checkout(this.mainBranch)
+    await this.git.checkout(await this.mainBranch())
   }
 
   async getBranch(): Promise<BranchInfo> {
@@ -68,7 +94,7 @@ export class GitOps {
 
   async notOnMainBranch(): Promise<void> {
     const summ = await this.git.branch([])
-    if (summ.current === this.mainBranch) {
+    if (summ.current === (await this.mainBranch())) {
       stopMe(`cannot be carried out when on branch '${summ.current}'`)
     }
   }
