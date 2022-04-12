@@ -1,4 +1,4 @@
-import { SimpleGit, BranchSummary } from 'simple-git/promise'
+import { SimpleGit, BranchSummary } from 'simple-git'
 import * as child_process from 'child_process'
 import { logger } from './logger'
 import * as execa from 'execa'
