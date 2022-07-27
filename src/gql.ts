@@ -10,8 +10,6 @@ export interface CurrentPrInfo {
   number: number
   mergeabilityStatus: MergeabilityStatus
   url: string
-  rollupState: string
-  rollupStateIsMissing: boolean
   lastCommit?: {
     message: string
     abbreviatedOid?: string
@@ -101,9 +99,6 @@ export class GraphqlOps {
     const d = commit && (await this.gitOps.describeCommit(commit?.oid))
     const ordinal = d ? d.ordinal : -1
 
-    const rollupState = commit?.statusCheckRollup?.state
-    const rollupStateIsMissing = !rollupState
-
     const mergeabilityStatus: MergeabilityStatus =
       pr.mergeable === 'MERGEABLE' ? 'MERGEABLE' : pr.mergeable === 'CONFLICTING' ? 'CONFLICTING' : 'UNKNOWN'
 
@@ -112,8 +107,6 @@ export class GraphqlOps {
       number: pr.number,
       mergeabilityStatus,
       url: pr.url,
-      rollupState,
-      rollupStateIsMissing,
       lastCommit: commit && {
         message: commit?.message,
         abbreviatedOid: commit?.abbreviatedOid,
