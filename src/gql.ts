@@ -98,18 +98,6 @@ export class GraphqlOps {
       return undefined
     }
 
-    const mainBranch = await this.gitOps.mainBranch()
-    const matchingRules = repository?.branchProtectionRules?.nodes?.filter(n =>
-      n.matchingRefs?.nodes?.find(({ name }) => name === mainBranch),
-    )
-
-    const rulesWithRequireStatusChecks =
-      matchingRules?.filter(r => r.requiredStatusCheckContexts.length > 0 && r.requiresStatusChecks) || []
-
-    const requiredCheckContexts = new Set<string>(
-      rulesWithRequireStatusChecks.map(r => r.requiredStatusCheckContexts).flat(),
-    )
-
     const commit = pr?.commits?.nodes && pr?.commits?.nodes[0]?.commit
     const d = commit && (await this.gitOps.describeCommit(commit?.oid))
     const ordinal = d ? d.ordinal : -1
@@ -117,14 +105,6 @@ export class GraphqlOps {
     const rollupState = commit?.statusCheckRollup?.state
     const checksArePositive = rollupState === 'SUCCESS'
     const rollupStateIsMissing = !rollupState
-
-    logger.silly(
-      `analysis of checks:\n${JSON.stringify(
-        { matchingRules, rulesWithRequireStatusChecks, requiredCheckContexts: [...requiredCheckContexts] },
-        null,
-        2,
-      )}`,
-    )
 
     const mergeabilityStatus: MergeabilityStatus =
       pr.mergeable === 'MERGEABLE' ? 'MERGEABLE' : pr.mergeable === 'CONFLICTING' ? 'CONFLICTING' : 'UNKNOWN'
