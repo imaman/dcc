@@ -73,9 +73,6 @@ async function catchUp() {
   print(`This branch's baseline is now: ${c?.data.hash.substring(0, 7)} ${c?.data.message}`)
   const changedFiles = await gitOps.getChangedFiles(baselineCommit)
   print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
-  for (const at of changedFiles) {
-    print(`  ${at}`)
-  }
 }
 
 async function listOngoing() {
