@@ -1,0 +1,37 @@
+#!/bin/bash
+
+t=$(cat ~/.dccrc.json | grep token | cut -d '"' -f 4)
+
+
+
+echo "pull"
+curl \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: token $t" \
+  https://api.github.com/repos/moojo-tech/hiring/pulls/6
+
+
+echo "statuses"
+curl \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: token $t" \
+  https://api.github.com/repos/moojo-tech/hiring/statuses/68fe5fc860b9774645801cee8baf02630d6f68f0
+
+
+echo "check-runs"
+curl \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: token $t" \
+  https://api.github.com/repos/moojo-tech/hiring/commits/68fe5fc860b9774645801cee8baf02630d6f68f0/check-runs
+  
+
+echo "annotations"
+curl \
+  -H "Accept: application/vnd.github+json" \
+  -H "Authorization: token $t" \
+  https://api.github.com/repos/moojo-tech/hiring/check-runs/7538895407/annotations
+
+
+
+
+
