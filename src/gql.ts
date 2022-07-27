@@ -10,7 +10,6 @@ export interface CurrentPrInfo {
   number: number
   mergeabilityStatus: MergeabilityStatus
   url: string
-  checksArePositive: boolean
   rollupState: string
   rollupStateIsMissing: boolean
   lastCommit?: {
@@ -103,7 +102,6 @@ export class GraphqlOps {
     const ordinal = d ? d.ordinal : -1
 
     const rollupState = commit?.statusCheckRollup?.state
-    const checksArePositive = rollupState === 'SUCCESS'
     const rollupStateIsMissing = !rollupState
 
     const mergeabilityStatus: MergeabilityStatus =
@@ -114,7 +112,6 @@ export class GraphqlOps {
       number: pr.number,
       mergeabilityStatus,
       url: pr.url,
-      checksArePositive,
       rollupState,
       rollupStateIsMissing,
       lastCommit: commit && {
