@@ -9,18 +9,7 @@ export interface CurrentPrInfo {
   title: string
   number: number
   mergeabilityStatus: MergeabilityStatus
-  foundFailingRequiredChecks: boolean
-  hasRequiredStatusChecks: boolean
   url: string
-  checksArePositive: boolean
-  rollupState: string
-  rollupStateIsMissing: boolean
-  requiredChecks: {
-    url: string
-    description: string
-    state: string
-    contextName: string
-  }[]
   lastCommit?: {
     message: string
     abbreviatedOid?: string
@@ -106,65 +95,18 @@ export class GraphqlOps {
       return undefined
     }
 
-    const mainBranch = await this.gitOps.mainBranch()
-    const matchingRules = repository?.branchProtectionRules?.nodes?.filter(n =>
-      n.matchingRefs?.nodes?.find(({ name }) => name === mainBranch),
-    )
-
-    const rulesWithRequireStatusChecks =
-      matchingRules?.filter(r => r.requiredStatusCheckContexts.length > 0 && r.requiresStatusChecks) || []
-
-    const requiredCheckContexts = new Set<string>(
-      rulesWithRequireStatusChecks.map(r => r.requiredStatusCheckContexts).flat(),
-    )
-
     const commit = pr?.commits?.nodes && pr?.commits?.nodes[0]?.commit
     const d = commit && (await this.gitOps.describeCommit(commit?.oid))
     const ordinal = d ? d.ordinal : -1
 
-    const rollupState = commit?.statusCheckRollup?.state
-    const checksArePositive = rollupState === 'SUCCESS'
-    const rollupStateIsMissing = !rollupState
-    const checks =
-      commit?.status?.contexts?.map(c => ({
-        state: c.state,
-        description: c.description,
-        url: c.targetUrl,
-        contextName: c.context,
-      })) || []
-
-    const requiredChecks = checks.filter(c => requiredCheckContexts.has(c.contextName))
-
-    const received = new Set<string>(checks.map(c => c.contextName))
-    const missing = [...requiredCheckContexts].filter(curr => !received.has(curr))
-    for (const m of missing) {
-      requiredChecks.push({ state: 'UNKNOWN', description: '', url: '', contextName: m })
-    }
-
-    logger.silly(
-      `analysis of checks:\n${JSON.stringify(
-        { matchingRules, rulesWithRequireStatusChecks, requiredCheckContexts: [...requiredCheckContexts], missing },
-        null,
-        2,
-      )}`,
-    )
-
-    const hasRequiredStatusChecks = rulesWithRequireStatusChecks.length > 0
-    const foundFailingRequiredChecks = Boolean(requiredChecks.find(c => c.state === 'ERROR' || c.state === 'FAILURE'))
     const mergeabilityStatus: MergeabilityStatus =
       pr.mergeable === 'MERGEABLE' ? 'MERGEABLE' : pr.mergeable === 'CONFLICTING' ? 'CONFLICTING' : 'UNKNOWN'
 
-    const ret = {
+    const ret: CurrentPrInfo = {
       title: pr.title,
       number: pr.number,
-      hasRequiredStatusChecks,
-      foundFailingRequiredChecks,
       mergeabilityStatus,
       url: pr.url,
-      checksArePositive,
-      rollupState,
-      rollupStateIsMissing,
-      requiredChecks,
       lastCommit: commit && {
         message: commit?.message,
         abbreviatedOid: commit?.abbreviatedOid,
