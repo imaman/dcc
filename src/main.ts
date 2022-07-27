@@ -80,6 +80,12 @@ async function listOngoing() {
   }
 }
 
+async function diff(a: Arguments) {
+  const mainBranch = await gitOps.mainBranch()
+  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+  await gitOps.diff(baselineCommit, Boolean(a.tool))
+}
+
 async function pending() {
   const mainBranch = await gitOps.mainBranch()
   const changedFiles = await gitOps.getChangedFiles(`origin/${mainBranch}`)
@@ -290,6 +296,17 @@ yargs
     launch(listClosed),
   )
   .command('pending', 'List names of changes files (compared to origin/<main-branch>)', a => a, launch(pending))
+  .command(
+    'diff',
+    'Diff against baseline',
+    yargs =>
+      yargs.option('tool', {
+        alias: 't',
+        describe: 'Use git difftool for showing the diff.',
+        type: 'boolean',
+      }),
+    launch(diff),
+  )
   .strict()
   .help()
   .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv

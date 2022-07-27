@@ -170,5 +170,19 @@ export class GitOps {
     return diffSummary.files.map(it => it.file)
   }
 
-  async findBaselineCommit() {}
+  async findBaselineCommit(mainBranch: string): Promise<string> {
+    const out = await this.git.raw(['merge-base', mainBranch, 'HEAD'])
+    const lines = out
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s.length > 0)
+    if (lines.length !== 1) {
+      throw new Error(`Cannot find baseline commit`)
+    }
+    return lines[0]
+  }
+
+  async diff(commit: string, useDifftool: boolean): Promise<void> {
+    await execa('git', [useDifftool ? 'difftool' : 'diff', commit], { stdout: 'inherit' })
+  }
 }
