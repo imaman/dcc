@@ -68,6 +68,7 @@ async function catchUp() {
   const mainBranch = await gitOps.mainBranch()
   await gitOps.fetch('origin', mainBranch)
   await gitOps.merge('origin', mainBranch)
+  await pending()
 }
 
 async function listOngoing() {
