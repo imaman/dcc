@@ -169,4 +169,6 @@ export class GitOps {
     const diffSummary = await this.git.diffSummary([remoteName])
     return diffSummary.files.map(it => it.file)
   }
+
+  async findBaselineCommit() {}
 }
