@@ -4,6 +4,7 @@ import * as path from 'path'
 import * as os from 'os'
 import { Octokit } from '@octokit/rest'
 import { z } from 'zod'
+import * as timeago from 'timeago.js'
 
 import * as sourceMapSupport from 'source-map-support'
 sourceMapSupport.install()
@@ -125,20 +126,9 @@ async function submit() {
     return
   }
 
-  if (pr.foundFailingRequiredChecks) {
-    print(`This PR is blocked by failing checks (use "dcc ${STATUS_COMMAND}" to get further details)`)
-    return
-  }
-
-  if (pr.checksArePositive || !pr.hasRequiredStatusChecks) {
-    await githubOps.merge(pr.number)
-    print('merged')
-    await gitOps.switchToMainBranch()
-    return
-  }
-
-  await githubOps.addPrComment(pr.number, '#automerge')
-  print('#automerge statred')
+  await githubOps.merge(pr.number)
+  print('merged')
+  await gitOps.switchToMainBranch()
 }
 
 async function listClosed(args: Arguments) {
@@ -200,6 +190,7 @@ async function status() {
   if (!pr) {
     print('No PR was created for this branch')
   } else {
+    const checks = await githubOps.getChecks(pr?.number)
     print(`PR #${pr.number}: ${pr.title}`)
     print(pr.url)
     if (pr.lastCommit) {
@@ -215,8 +206,14 @@ async function status() {
 
     print(`\nMeragability status: ${pr.mergeabilityStatus}`)
     print('Checks:')
-    for (const c of pr.requiredChecks || []) {
-      print(`  - ${c.contextName}: ${c.state}\n    ${c.description}\n    ${c.url}\n`)
+    for (const c of checks.passing) {
+      print(`  - ✅ ${c.name}\n`)
+    }
+    for (const c of checks.pending) {
+      print(`  - 🚧 ${c.name} ${c.startedAt ? '(started ' + timeago.format(c.startedAt) + ')' : ''}\n    ${c.url}\n`)
+    }
+    for (const c of checks.failing) {
+      print(`  - ❌ ${c.name}: ${c.summary}\n       ${c.url}`)
     }
     print()
   }
