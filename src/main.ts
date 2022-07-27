@@ -62,7 +62,7 @@ function launch(f: (a: Arguments) => Promise<void>) {
   }
 }
 
-async function catchUp() {
+async function catchUp(mode: 'SILENT' | 'CHATTY') {
   await gitOps.notOnMainBranch()
   await gitOps.noUncommittedChanges()
   const mainBranch = await gitOps.mainBranch()
@@ -70,6 +70,10 @@ async function catchUp() {
   await gitOps.merge('origin', mainBranch)
   const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
   const c = await gitOps.describeCommit(baselineCommit)
+
+  if (mode === 'SILENT') {
+    return
+  }
   print(`This branch's baseline is now: ${c?.data.hash.substring(0, 7)} ${c?.data.message}`)
   const changedFiles = await gitOps.getChangedFiles(baselineCommit)
   print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
@@ -133,6 +137,7 @@ async function submit() {
 
   await githubOps.merge(pr.number)
   print('merged')
+  await catchUp('SILENT')
   await gitOps.switchToMainBranch()
 }
 
@@ -284,7 +289,7 @@ yargs
     'catch-up',
     'Pull most recent changes into the main branch and into the current one',
     a => a,
-    launch(catchUp),
+    launch(() => catchUp('CHATTY')),
   )
   .command('list-ongoing', 'List currently open PRs', a => a, launch(listOngoing))
   .command(
