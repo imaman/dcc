@@ -92,9 +92,12 @@ export class GitOps {
     }
   }
 
+  /**
+   * Checks whether the current branch is the main branch, and bails out with an error if it is the main branch.
+   */
   async notOnMainBranch(): Promise<void> {
-    const summ = await this.git.branch([])
-    if (summ.current === (await this.mainBranch())) {
+    const [summ, mainBranch] = await Promise.all([await this.git.branch([]), await this.mainBranch()])
+    if (summ.current === mainBranch) {
       stopMe(`cannot be carried out when on branch '${summ.current}'`)
     }
   }
