@@ -88,7 +88,8 @@ async function diff(a: Arguments) {
 
 async function pending() {
   const mainBranch = await gitOps.mainBranch()
-  const changedFiles = await gitOps.getChangedFiles(`origin/${mainBranch}`)
+  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+  const changedFiles = await gitOps.getChangedFiles(baselineCommit)
   for (const curr of changedFiles) {
     print(curr)
   }
