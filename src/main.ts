@@ -68,6 +68,9 @@ async function catchUp() {
   const mainBranch = await gitOps.mainBranch()
   await gitOps.fetch('origin', mainBranch)
   await gitOps.merge('origin', mainBranch)
+  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+  const c = await gitOps.describeCommit(baselineCommit)
+  print(`Baseline commit is now: ${c?.data.message}`)
   await pending()
 }
 
