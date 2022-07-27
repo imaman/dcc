@@ -68,6 +68,11 @@ async function catchUp() {
   const mainBranch = await gitOps.mainBranch()
   await gitOps.fetch('origin', mainBranch)
   await gitOps.merge('origin', mainBranch)
+  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+  const c = await gitOps.describeCommit(baselineCommit)
+  print(`This branch's baseline is now: ${c?.data.hash.substring(0, 7)} ${c?.data.message}`)
+  const changedFiles = await gitOps.getChangedFiles(baselineCommit)
+  print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
 }
 
 async function listOngoing() {
