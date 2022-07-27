@@ -118,20 +118,9 @@ async function submit() {
     return
   }
 
-  if (pr.foundFailingRequiredChecks) {
-    print(`This PR is blocked by failing checks (use "dcc ${STATUS_COMMAND}" to get further details)`)
-    return
-  }
-
-  if (pr.checksArePositive || !pr.hasRequiredStatusChecks) {
-    await githubOps.merge(pr.number)
-    print('merged')
-    await gitOps.switchToMainBranch()
-    return
-  }
-
-  await githubOps.addPrComment(pr.number, '#automerge')
-  print('#automerge statred')
+  await githubOps.merge(pr.number)
+  print('merged')
+  await gitOps.switchToMainBranch()
 }
 
 async function listClosed(args: Arguments) {
@@ -208,9 +197,6 @@ async function status() {
 
     print(`\nMeragability status: ${pr.mergeabilityStatus}`)
     print('Checks:')
-    for (const c of pr.requiredChecks || []) {
-      print(`  - ${c.contextName}: ${c.state}\n    ${c.description}\n    ${c.url}\n`)
-    }
     print()
   }
 }
