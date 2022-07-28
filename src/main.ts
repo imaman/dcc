@@ -249,20 +249,16 @@ async function status() {
 
     print(`\nMeragability status: ${pr.mergeabilityStatus}`)
     print('Checks:')
-    for (const c of checks.filter(c => c.tag === 'PASSING')) {
-      printCheck(c)
-    }
-    for (const c of checks.filter(c => c.tag === 'PENDING')) {
-      printCheck(c)
-    }
-    for (const c of checks.filter(c => c.tag === 'FAILING')) {
+    const orderOfCheck = (c: Check) =>
+      c.tag === 'PASSING' ? 0 : c.tag === 'PENDING' ? 1 : c.tag === 'FAILING' ? 2 : shouldNeverHappen(c)
+    for (const c of checks.sort((a, b) => orderOfCheck(a) - orderOfCheck(b))) {
       printCheck(c)
     }
     print()
   }
 }
 
-function shouldNeverHappen(_n: never) {
+function shouldNeverHappen(_n: never): never {
   throw new Error(`Never goign to happen at runtime`)
 }
 
