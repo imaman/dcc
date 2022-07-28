@@ -145,16 +145,20 @@ async function submit() {
   }
 
   const checks = await githubOps.getChecks(pr?.number)
-  if (checks.failing.length) {
+  const failing = checks.filter(c => c.tag === 'FAILING')
+  if (failing.length) {
     print('some checks are failing')
-    for (const c of checks.failing) {
-      print(`  - failing: ${c.name}`)
+    for (const c of failing) {
+      printCheck(c)
     }
     return
-  } else if (checks.pending.length) {
+  }
+
+  const pending = checks.filter(c => c.tag === 'PENDING')
+  if (pending.length) {
     print('some checks are pending')
-    for (const c of checks.failing) {
-      print(`  - pending: ${c.name}`)
+    for (const c of pending) {
+      printCheck(c)
     }
 
     await graphqlOps.enableAutoMerge(pr)
