@@ -45,15 +45,27 @@ function reify<T>(t: T | null | undefined): T {
   return t
 }
 
-interface ChecksInfo {
-  failing: { name: string; url: string | null; summary: string | null }[]
-  passing: { name: string }[]
-  pending: { name: string; startedAt: string | null; url: string | null }[]
-}
+export type Check =
+  | {
+      tag: 'FAILING'
+      name: string
+      url: string | null
+      summary: string | null
+    }
+  | {
+      tag: 'PASSING'
+      name: string
+    }
+  | {
+      tag: 'PENDING'
+      name: string
+      startedAt: string | null
+      url: string | null
+    }
 export class GithubOps {
   constructor(private readonly kit: Octokit, private readonly gitOps: GitOps, private readonly prLabels: string[]) {}
 
-  async getChecks(n: number): Promise<ChecksInfo> {
+  async getChecks(n: number): Promise<Check[]> {
     const r = await this.gitOps.getRepo()
     const pr = await this.kit.pulls.get({ pull_number: n, owner: r.owner, repo: r.name })
     const checks = await this.kit.checks.listForRef({
@@ -62,15 +74,17 @@ export class GithubOps {
       ref: pr.data.head.sha,
     })
 
-    const pending = checks.data.check_runs.filter(cr => cr.status !== 'completed')
-    const passing = checks.data.check_runs.filter(cr => cr.status === 'completed' && cr.conclusion === 'success')
-    const failing = checks.data.check_runs.filter(cr => cr.status === 'completed' && cr.conclusion !== 'success')
+    const pending: Check[] = checks.data.check_runs
+      .filter(cr => cr.status !== 'completed')
+      .map(cr => ({ tag: 'PENDING', name: cr.name, startedAt: cr.started_at, url: cr.html_url }))
+    const passing: Check[] = checks.data.check_runs
+      .filter(cr => cr.status === 'completed' && cr.conclusion === 'success')
+      .map(cr => ({ tag: 'PASSING', name: cr.name }))
+    const failing: Check[] = checks.data.check_runs
+      .filter(cr => cr.status === 'completed' && cr.conclusion !== 'success')
+      .map(cr => ({ tag: 'FAILING', name: cr.name, url: cr.html_url, summary: cr.output.summary }))
 
-    return {
-      failing: failing.map(cr => ({ name: cr.name, url: cr.html_url, summary: cr.output.summary })),
-      passing: passing.map(cr => ({ name: cr.name })),
-      pending: pending.map(cr => ({ name: cr.name, startedAt: cr.started_at, url: cr.html_url })),
-    }
+    return [...pending, ...passing, ...failing]
   }
 
   async getUser(): Promise<string> {

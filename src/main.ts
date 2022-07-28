@@ -13,7 +13,7 @@ import simpleGit from 'simple-git'
 import * as yargs from 'yargs'
 import { Arguments } from 'yargs'
 
-import { GithubOps } from './GithubOps'
+import { Check, GithubOps } from './GithubOps'
 import { GitOps } from './GitOps'
 import { CurrentPrInfo, GraphqlOps } from './gql'
 import { logger } from './logger'
@@ -145,16 +145,20 @@ async function submit() {
   }
 
   const checks = await githubOps.getChecks(pr?.number)
-  if (checks.failing.length) {
+  const failing = checks.filter(c => c.tag === 'FAILING')
+  if (failing.length) {
     print('some checks are failing')
-    for (const c of checks.failing) {
-      print(`  - failing: ${c.name}`)
+    for (const c of failing) {
+      printCheck(c)
     }
     return
-  } else if (checks.pending.length) {
+  }
+
+  const pending = checks.filter(c => c.tag === 'PENDING')
+  if (pending.length) {
     print('some checks are pending')
-    for (const c of checks.failing) {
-      print(`  - pending: ${c.name}`)
+    for (const c of pending) {
+      printCheck(c)
     }
 
     await graphqlOps.enableAutoMerge(pr)
@@ -229,7 +233,7 @@ async function status() {
   if (!pr) {
     print('No PR was created for this branch')
   } else {
-    const checks = await githubOps.getChecks(pr?.number)
+    const checks: Check[] = await githubOps.getChecks(pr?.number)
     print(`PR #${pr.number}: ${pr.title}`)
     print(pr.url)
     if (pr.lastCommit) {
@@ -245,16 +249,32 @@ async function status() {
 
     print(`\nMeragability status: ${pr.mergeabilityStatus}`)
     print('Checks:')
-    for (const c of checks.passing) {
-      print(`  - ✅ ${c.name}\n`)
+    for (const c of checks.filter(c => c.tag === 'PASSING')) {
+      printCheck(c)
     }
-    for (const c of checks.pending) {
-      print(`  - 🚧 ${c.name} ${c.startedAt ? '(started ' + timeago.format(c.startedAt) + ')' : ''}\n    ${c.url}\n`)
+    for (const c of checks.filter(c => c.tag === 'PENDING')) {
+      printCheck(c)
     }
-    for (const c of checks.failing) {
-      print(`  - ❌ ${c.name}: ${c.summary}\n       ${c.url}`)
+    for (const c of checks.filter(c => c.tag === 'FAILING')) {
+      printCheck(c)
     }
     print()
+  }
+}
+
+function shouldNeverHappen(_n: never) {
+  throw new Error(`Never goign to happen at runtime`)
+}
+
+function printCheck(c: Check) {
+  if (c.tag === 'PASSING') {
+    print(`  - ✅ ${c.name}\n`)
+  } else if (c.tag === 'PENDING') {
+    print(`  - 🚧 ${c.name} ${c.startedAt ? '(started ' + timeago.format(c.startedAt) + ')' : ''}\n    ${c.url}\n`)
+  } else if (c.tag === 'FAILING') {
+    print(`  - ❌ ${c.name}: ${c.summary}\n       ${c.url}`)
+  } else {
+    shouldNeverHappen(c)
   }
 }
 
