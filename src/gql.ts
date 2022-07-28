@@ -6,6 +6,7 @@ import { logger } from './logger'
 
 type MergeabilityStatus = 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
 export interface CurrentPrInfo {
+  id: string
   title: string
   number: number
   mergeabilityStatus: MergeabilityStatus
@@ -28,6 +29,18 @@ export class GraphqlOps {
         hook: auth.hook,
       },
     })
+  }
+
+  async enableAutoMerge(pr: CurrentPrInfo): Promise<void> {
+    const m = `
+      mutation MyMutation {
+        enablePullRequestAutoMerge(input: {pullRequestId: "${pr.id}", mergeMethod: SQUASH}) {
+          clientMutationId
+        }
+      }`
+
+    const resp = await this.authedGraphql(m)
+    logger.silly(`enableAutoMerge(): m=\n${m}, resp=${JSON.stringify(resp, null, 2)}`)
   }
 
   async getCurrentPr(): Promise<CurrentPrInfo | undefined> {
@@ -53,6 +66,16 @@ export class GraphqlOps {
           name
           associatedPullRequests(last: 10, states: OPEN) {
             nodes {
+              id
+              autoMergeRequest {
+                mergeMethod
+                enabledBy {
+                  login
+                }
+                enabledAt
+                commitHeadline
+                authorEmail
+              }
               headRefName
               title
               number
@@ -83,7 +106,72 @@ export class GraphqlOps {
         }
       }
     }`
+
+    //
+    // A sample response:
+    //
+    // {
+    //   "repository": {
+    //     "branchProtectionRules": {
+    //       "nodes": [
+    //         {
+    //           "matchingRefs": {
+    //             "nodes": [
+    //               {
+    //                 "name": "main"
+    //               }
+    //             ]
+    //           },
+    //           "requiredStatusCheckContexts": [
+    //             "ci-build"
+    //           ],
+    //           "requiresStatusChecks": true
+    //         }
+    //       ]
+    //     },
+    //     "ref": {
+    //       "name": "reqtest",
+    //       "associatedPullRequests": {
+    //         "nodes": [
+    //           {
+    //             "id": "PR_kwDOHKnrAM48OwUR",
+    //             "autoMergeRequest": {
+    //               "mergeMethod": "SQUASH",
+    //               "enabledBy": {
+    //                 "login": "imaman"
+    //               },
+    //               "enabledAt": "2022-07-28T08:13:34Z",
+    //               "commitHeadline": null,
+    //               "authorEmail": null
+    //             },
+    //             "headRefName": "reqtest",
+    //             "title": "reinstate the running of tests in CI",
+    //             "number": 85,
+    //             "url": "https://github.com/moojo-tech/antelope/pull/85",
+    //             "mergeable": "MERGEABLE",
+    //             "commits": {
+    //               "nodes": [
+    //                 {
+    //                   "commit": {
+    //                     "message": "yarn test",
+    //                     "abbreviatedOid": "799eed4",
+    //                     "oid": "799eed411960ef23688017f9781110ba65cea7a2",
+    //                     "statusCheckRollup": {
+    //                       "state": "PENDING"
+    //                     },
+    //                     "status": null
+    //                   }
+    //                 }
+    //               ]
+    //             }
+    //           }
+    //         ]
+    //       }
+    //     }
+    //   }
+    // }
     const resp = await this.authedGraphql(q)
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const repository: Rep = (resp as any).repository
     logger.silly(`getCurrentPr(): q=\n${q}, resp=${JSON.stringify(repository, null, 2)}`)
@@ -103,6 +191,7 @@ export class GraphqlOps {
       pr.mergeable === 'MERGEABLE' ? 'MERGEABLE' : pr.mergeable === 'CONFLICTING' ? 'CONFLICTING' : 'UNKNOWN'
 
     const ret: CurrentPrInfo = {
+      id: pr.id,
       title: pr.title,
       number: pr.number,
       mergeabilityStatus,
@@ -124,6 +213,7 @@ type Rep = {
   ref: {
     associatedPullRequests: {
       nodes: {
+        id: string
         mergeable: string
         title: string
         number: number

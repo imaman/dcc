@@ -144,6 +144,24 @@ async function submit() {
     return
   }
 
+  const checks = await githubOps.getChecks(pr?.number)
+  if (checks.failing.length) {
+    print('some checks are failing')
+    for (const c of checks.failing) {
+      print(`  - failing: ${c.name}`)
+    }
+    return
+  } else if (checks.pending.length) {
+    print('some checks are pending')
+    for (const c of checks.failing) {
+      print(`  - pending: ${c.name}`)
+    }
+
+    await graphqlOps.enableAutoMerge(pr)
+    print('auto merge requested')
+    return
+  }
+
   await githubOps.merge(pr.number)
   print('merged')
   const mainBranch = await catchUp('SILENT')
