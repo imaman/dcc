@@ -31,7 +31,7 @@ export class GraphqlOps {
     })
   }
 
-  async enableAutoMerge(pr: CurrentPrInfo) {
+  async enableAutoMerge(pr: CurrentPrInfo): Promise<void> {
     const m = `
       mutation MyMutation {
         enablePullRequestAutoMerge(input: {pullRequestId: "${pr.id}", mergeMethod: SQUASH}) {
@@ -40,7 +40,7 @@ export class GraphqlOps {
       }`
 
     const resp = await this.authedGraphql(m)
-    console.log(`L.43 resp=${JSON.stringify(resp, null, 2)}`)
+    logger.silly(`enableAutoMerge(): m=\n${m}, resp=${JSON.stringify(resp, null, 2)}`)
   }
 
   async getCurrentPr(): Promise<CurrentPrInfo | undefined> {
@@ -67,6 +67,15 @@ export class GraphqlOps {
           associatedPullRequests(last: 10, states: OPEN) {
             nodes {
               id
+              autoMergeRequest {
+                mergeMethod
+                enabledBy {
+                  login
+                }
+                enabledAt
+                commitHeadline
+                authorEmail
+              }
               headRefName
               title
               number
@@ -97,9 +106,72 @@ export class GraphqlOps {
         }
       }
     }`
+
+    //
+    // A sample response:
+    //
+    // {
+    //   "repository": {
+    //     "branchProtectionRules": {
+    //       "nodes": [
+    //         {
+    //           "matchingRefs": {
+    //             "nodes": [
+    //               {
+    //                 "name": "main"
+    //               }
+    //             ]
+    //           },
+    //           "requiredStatusCheckContexts": [
+    //             "ci-build"
+    //           ],
+    //           "requiresStatusChecks": true
+    //         }
+    //       ]
+    //     },
+    //     "ref": {
+    //       "name": "reqtest",
+    //       "associatedPullRequests": {
+    //         "nodes": [
+    //           {
+    //             "id": "PR_kwDOHKnrAM48OwUR",
+    //             "autoMergeRequest": {
+    //               "mergeMethod": "SQUASH",
+    //               "enabledBy": {
+    //                 "login": "imaman"
+    //               },
+    //               "enabledAt": "2022-07-28T08:13:34Z",
+    //               "commitHeadline": null,
+    //               "authorEmail": null
+    //             },
+    //             "headRefName": "reqtest",
+    //             "title": "reinstate the running of tests in CI",
+    //             "number": 85,
+    //             "url": "https://github.com/moojo-tech/antelope/pull/85",
+    //             "mergeable": "MERGEABLE",
+    //             "commits": {
+    //               "nodes": [
+    //                 {
+    //                   "commit": {
+    //                     "message": "yarn test",
+    //                     "abbreviatedOid": "799eed4",
+    //                     "oid": "799eed411960ef23688017f9781110ba65cea7a2",
+    //                     "statusCheckRollup": {
+    //                       "state": "PENDING"
+    //                     },
+    //                     "status": null
+    //                   }
+    //                 }
+    //               ]
+    //             }
+    //           }
+    //         ]
+    //       }
+    //     }
+    //   }
+    // }
     const resp = await this.authedGraphql(q)
 
-    console.log(`L.92 resp=${JSON.stringify(resp, null, 2)}`)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const repository: Rep = (resp as any).repository
     logger.silly(`getCurrentPr(): q=\n${q}, resp=${JSON.stringify(repository, null, 2)}`)

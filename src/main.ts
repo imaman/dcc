@@ -17,7 +17,6 @@ import { GithubOps } from './GithubOps'
 import { GitOps } from './GitOps'
 import { CurrentPrInfo, GraphqlOps } from './gql'
 import { logger } from './logger'
-import { graphql } from '@octokit/graphql'
 
 const DccConfigSchema = z.object({
   token: z.string(),
@@ -149,6 +148,24 @@ async function submit() {
 
   if (pr.mergeabilityStatus === 'CONFLICTING') {
     print(`This PR is blocked by merge conflicts`)
+    return
+  }
+
+  const checks = await githubOps.getChecks(pr?.number)
+  if (checks.failing.length) {
+    print('some checks are failing')
+    for (const c of checks.failing) {
+      print(`  - failing: ${c.name}`)
+    }
+    return
+  } else if (checks.pending.length) {
+    print('some checks are pending')
+    for (const c of checks.failing) {
+      print(`  - pending: ${c.name}`)
+    }
+
+    await graphqlOps.enableAutoMerge(pr)
+    print('auto merge requested')
     return
   }
 
