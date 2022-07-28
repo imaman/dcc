@@ -91,6 +91,14 @@ async function listOngoing() {
   }
 }
 
+async function createNew(a: Arguments) {
+  await gitOps.noUncommittedChanges()
+  const mainBranch = await gitOps.mainBranch()
+  await gitOps.fetch('origin', mainBranch)
+  await gitOps.merge('origin', mainBranch)
+  await gitOps.createBranch(a.branch, `origin/${mainBranch}`)
+}
+
 async function diff(a: Arguments) {
   const mainBranch = await gitOps.mainBranch()
   const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
@@ -308,17 +316,30 @@ yargs
       }),
     launch(listClosed),
   )
-  .command('pending', 'List names of changes files (compared to origin/<main-branch>)', a => a, launch(pending))
+  .command('pending', `Lists all changes files (compared to branch's baseline commit)`, a => a, launch(pending))
   .command(
     'diff',
-    'Diff against baseline',
+    `Diffs against the branch's baseline commit`,
     yargs =>
       yargs.option('tool', {
         alias: 't',
-        describe: 'Use git difftool for showing the diff.',
+        describe: 'Use git difftool for showing the diff',
         type: 'boolean',
       }),
     launch(diff),
+  )
+  .command(
+    'start-new',
+    `Creates a new branch, from the most recently merged commit.`,
+    yargs =>
+      yargs
+        .option('branch', {
+          alias: 'b',
+          type: 'string',
+          describe: 'The name of the new branch',
+        })
+        .demandOption('branch'),
+    launch(createNew),
   )
   .strict()
   .help()

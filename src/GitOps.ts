@@ -164,6 +164,10 @@ export class GitOps {
     await this.git.checkout(branchName)
   }
 
+  async createBranch(branchName: string, baselineRef: string): Promise<void> {
+    await this.git.checkoutBranch(branchName, baselineRef)
+  }
+
   async merge(remoteName: string, branchName: string): Promise<void> {
     await this.git.merge([`${remoteName}/${branchName}`])
   }
