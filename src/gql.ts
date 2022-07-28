@@ -30,6 +30,7 @@ export class GraphqlOps {
     })
   }
 
+  async enableAutoMerge() {}
   async getCurrentPr(): Promise<CurrentPrInfo | undefined> {
     const b = await this.gitOps.getBranch()
     // const user = await this.githubOps.getUser()
@@ -84,6 +85,8 @@ export class GraphqlOps {
       }
     }`
     const resp = await this.authedGraphql(q)
+
+    console.log(`L.92 resp=${JSON.stringify(resp, null, 2)}`)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const repository: Rep = (resp as any).repository
     logger.silly(`getCurrentPr(): q=\n${q}, resp=${JSON.stringify(repository, null, 2)}`)
