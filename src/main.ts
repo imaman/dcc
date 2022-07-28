@@ -91,13 +91,6 @@ async function listOngoing() {
   }
 }
 
-async function am() {
-  const pr = await graphqlOps.getCurrentPr()
-  if (pr) {
-    await graphqlOps.enableAutoMerge(pr)
-  }
-}
-
 async function createNew(a: Arguments) {
   await gitOps.noUncommittedChanges()
   const mainBranch = await gitOps.mainBranch()
@@ -366,7 +359,6 @@ yargs
         .demandOption('branch'),
     launch(createNew),
   )
-  .command('am', `start automerging`, a => a, launch(am))
   .strict()
   .help()
   .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv
