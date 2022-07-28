@@ -6,6 +6,7 @@ import { logger } from './logger'
 
 type MergeabilityStatus = 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
 export interface CurrentPrInfo {
+  id: string
   title: string
   number: number
   mergeabilityStatus: MergeabilityStatus
@@ -30,7 +31,18 @@ export class GraphqlOps {
     })
   }
 
-  async enableAutoMerge() {}
+  async enableAutoMerge(pr: CurrentPrInfo) {
+    const m = `
+      mutation MyMutation {
+        enablePullRequestAutoMerge(input: {pullRequestId: "${pr.id}", mergeMethod: SQUASH}) {
+          clientMutationId
+        }
+      }`
+
+    const resp = await this.authedGraphql(m)
+    console.log(`L.43 resp=${JSON.stringify(resp, null, 2)}`)
+  }
+
   async getCurrentPr(): Promise<CurrentPrInfo | undefined> {
     const b = await this.gitOps.getBranch()
     // const user = await this.githubOps.getUser()
@@ -54,6 +66,7 @@ export class GraphqlOps {
           name
           associatedPullRequests(last: 10, states: OPEN) {
             nodes {
+              id
               headRefName
               title
               number
@@ -106,6 +119,7 @@ export class GraphqlOps {
       pr.mergeable === 'MERGEABLE' ? 'MERGEABLE' : pr.mergeable === 'CONFLICTING' ? 'CONFLICTING' : 'UNKNOWN'
 
     const ret: CurrentPrInfo = {
+      id: pr.id,
       title: pr.title,
       number: pr.number,
       mergeabilityStatus,
@@ -127,6 +141,7 @@ type Rep = {
   ref: {
     associatedPullRequests: {
       nodes: {
+        id: string
         mergeable: string
         title: string
         number: number

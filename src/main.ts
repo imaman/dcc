@@ -17,6 +17,7 @@ import { GithubOps } from './GithubOps'
 import { GitOps } from './GitOps'
 import { CurrentPrInfo, GraphqlOps } from './gql'
 import { logger } from './logger'
+import { graphql } from '@octokit/graphql'
 
 const DccConfigSchema = z.object({
   token: z.string(),
@@ -88,6 +89,13 @@ async function listOngoing() {
         curr.url
       }`,
     )
+  }
+}
+
+async function am() {
+  const pr = await graphqlOps.getCurrentPr()
+  if (pr) {
+    await graphqlOps.enableAutoMerge(pr)
   }
 }
 
@@ -341,6 +349,7 @@ yargs
         .demandOption('branch'),
     launch(createNew),
   )
+  .command('am', `start automerging`, a => a, launch(am))
   .strict()
   .help()
   .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv
