@@ -45,7 +45,7 @@ function reify<T>(t: T | null | undefined): T {
   return t
 }
 
-type Check =
+export type Check =
   | {
       tag: 'FAILING'
       name: string
