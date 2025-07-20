@@ -54,7 +54,7 @@ export class GitOps {
     // refs/remotes/origin/main -> main
     const parts = lines[0]
       .split('/')
-      .map((at: string) => at.trim())
+      .map(at => at.trim())
       .filter(Boolean)
     if (parts.length !== 4) {
       throw new Error(`Unexpected output from ${command}: ${lines[0]}`)
