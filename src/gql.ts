@@ -1,7 +1,6 @@
 import { GitOps } from './GitOps.js'
 import { createTokenAuth } from '@octokit/auth-token'
 import * as octokit from '@octokit/graphql'
-import { graphql } from '@octokit/graphql/dist-types/types'
 import { logger } from './logger.js'
 
 type MergeabilityStatus = 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
@@ -20,7 +19,7 @@ export interface CurrentPrInfo {
 }
 
 export class GraphqlOps {
-  private readonly authedGraphql: graphql
+  private readonly authedGraphql: typeof octokit.graphql
   constructor(token: string, private readonly gitOps: GitOps) {
     const auth = createTokenAuth(token)
 
