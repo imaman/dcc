@@ -11,7 +11,7 @@ import open from 'open'
 import * as sourceMapSupport from 'source-map-support'
 sourceMapSupport.install()
 
-import simpleGit from 'simple-git'
+import { simpleGit } from 'simple-git'
 import yargs from 'yargs'
 import { Arguments } from 'yargs'
 
@@ -39,7 +39,7 @@ if (!token) {
 
 const octoKit = new Octokit({ auth: token })
 
-const gitOps = new GitOps(simpleGit.default())
+const gitOps = new GitOps(simpleGit())
 const githubOps = new GithubOps(octoKit, gitOps, parsed.prLabels ?? [])
 const graphqlOps = new GraphqlOps(token, gitOps)
 
