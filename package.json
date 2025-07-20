@@ -2,12 +2,13 @@
   "name": "dev-control-center",
   "version": "0.2.9",
   "description": "",
-  "main": "index.js",
+  "type": "module",
+  "main": "lib/main.js",
   "bin": {
     "dcc": "./lib/main.js"
   },
   "scripts": {
-    "lint": "eslint --max-warnings 0 'modules/*/**/*.{ts,js,json,d.ts}'",
+    "lint": "eslint --max-warnings 0 'src/**/*.{ts,js,json,d.ts}'",
     "build": "tsc",
     "test": "#"
   },

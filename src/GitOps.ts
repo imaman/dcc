@@ -1,7 +1,7 @@
 import { SimpleGit, BranchSummary } from 'simple-git'
 import * as child_process from 'child_process'
-import { logger } from './logger'
-import * as execa from 'execa'
+import { logger } from './logger.js'
+import execa from 'execa'
 
 interface BranchInfo {
   name: string
@@ -54,7 +54,7 @@ export class GitOps {
     // refs/remotes/origin/main -> main
     const parts = lines[0]
       .split('/')
-      .map(at => at.trim())
+      .map((at: string) => at.trim())
       .filter(Boolean)
     if (parts.length !== 4) {
       throw new Error(`Unexpected output from ${command}: ${lines[0]}`)

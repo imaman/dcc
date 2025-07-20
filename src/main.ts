@@ -2,6 +2,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
+import { fileURLToPath } from 'url'
 import { Octokit } from '@octokit/rest'
 import { z } from 'zod'
 import * as timeago from 'timeago.js'
@@ -10,13 +11,13 @@ import * as sourceMapSupport from 'source-map-support'
 sourceMapSupport.install()
 
 import simpleGit from 'simple-git'
-import * as yargs from 'yargs'
+import yargs from 'yargs'
 import { Arguments } from 'yargs'
 
-import { Check, GithubOps } from './GithubOps'
-import { GitOps } from './GitOps'
-import { CurrentPrInfo, GraphqlOps } from './gql'
-import { logger } from './logger'
+import { Check, GithubOps } from './GithubOps.js'
+import { GitOps } from './GitOps.js'
+import { CurrentPrInfo, GraphqlOps } from './gql.js'
+import { logger } from './logger.js'
 
 const DccConfigSchema = z.object({
   token: z.string(),
@@ -288,6 +289,7 @@ const GENERIC_HELP_MESSAGE = 'Specify --help for available options'
 
 const STATUS_COMMAND = 'status'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const currentVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8')).version
 yargs
   .usage('<command> [options]')

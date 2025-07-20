@@ -1,8 +1,8 @@
-import { GitOps } from './GitOps'
+import { GitOps } from './GitOps.js'
 import { createTokenAuth } from '@octokit/auth-token'
 import * as octokit from '@octokit/graphql'
 import { graphql } from '@octokit/graphql/dist-types/types'
-import { logger } from './logger'
+import { logger } from './logger.js'
 
 type MergeabilityStatus = 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
 export interface CurrentPrInfo {
