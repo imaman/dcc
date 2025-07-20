@@ -19,7 +19,7 @@ export interface CurrentPrInfo {
 }
 
 export class GraphqlOps {
-  private readonly authedGraphql: typeof octokit.graphql
+  private readonly authedGraphql
   constructor(token: string, private readonly gitOps: GitOps) {
     const auth = createTokenAuth(token)
 
