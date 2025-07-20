@@ -27,15 +27,16 @@
     "@octokit/graphql": "^4.5.6",
     "@octokit/rest": "^18.0.6",
     "execa": "^5.1.1",
+    "open": "^10.2.0",
     "simple-git": "^3.10.0",
-    "timeago.js": "^4.0.2",
     "source-map-support": "^0.5.13",
+    "timeago.js": "^4.0.2",
     "winston": "^3.2.1",
     "yargs": "^14.0.0",
     "zod": "^3.10.3"
   },
   "devDependencies": {
-    "@types/node": "^12.7.7",
+    "@types/node": "^24.0.15",
     "@types/source-map-support": "^0.5.3",
     "@types/yargs": "11.0.0",
     "@typescript-eslint/eslint-plugin": "^4.2.0",
@@ -52,7 +53,7 @@
     "pretty-quick": "^1.11.0",
     "ts-node": "^8.4.1",
     "tslint": "^5.20.0",
-    "typescript": "^4.4.4"
+    "typescript": "^5.8.3"
   },
   "packageManager": "yarn@3.0.2"
 }
