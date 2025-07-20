@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url'
 import { Octokit } from '@octokit/rest'
 import { z } from 'zod'
 import * as timeago from 'timeago.js'
+import open from 'open'
 
 import * as sourceMapSupport from 'source-map-support'
 sourceMapSupport.install()
@@ -259,6 +260,18 @@ async function status() {
   }
 }
 
+async function openPr() {
+  const pr = await graphqlOps.getCurrentPr()
+  if (!pr) {
+    print('🚫 No PR found for this branch')
+    return
+  }
+
+  const filesUrl = `${pr.url}/files`
+  print(`🌐 Opening ${filesUrl}`)
+  await open(filesUrl)
+}
+
 function shouldNeverHappen(_n: never): never {
   throw new Error(`Never goign to happen at runtime`)
 }
@@ -377,6 +390,7 @@ yargs
         .demandOption('branch'),
     launch(createNew),
   )
+  .command('open', 'Open the current PR files page in your browser', a => a, launch(openPr))
   .strict()
   .help()
   .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv
