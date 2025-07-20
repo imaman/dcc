@@ -26,9 +26,10 @@
     "@octokit/graphql": "^4.5.6",
     "@octokit/rest": "^18.0.6",
     "execa": "^5.1.1",
+    "open": "^10.2.0",
     "simple-git": "^3.10.0",
-    "timeago.js": "^4.0.2",
     "source-map-support": "^0.5.13",
+    "timeago.js": "^4.0.2",
     "winston": "^3.2.1",
     "yargs": "^14.0.0",
     "zod": "^3.10.3"
