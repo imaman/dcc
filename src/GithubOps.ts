@@ -1,6 +1,6 @@
-import { GitOps } from './GitOps'
+import { GitOps } from './GitOps.js'
 import { Octokit } from '@octokit/rest'
-import { logger } from './logger'
+import { logger } from './logger.js'
 
 interface PrInfo {
   url: string

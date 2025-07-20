@@ -1,7 +1,7 @@
 import { SimpleGit, BranchSummary } from 'simple-git'
 import * as child_process from 'child_process'
-import { logger } from './logger'
-import * as execa from 'execa'
+import { logger } from './logger.js'
+import execa from 'execa'
 
 interface BranchInfo {
   name: string
