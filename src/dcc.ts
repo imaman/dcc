@@ -67,19 +67,37 @@ function launch<T>(f: (a: T) => Promise<void>) {
 async function catchUp(mode: 'SILENT' | 'CHATTY') {
   await gitOps.notOnMainBranch()
   await gitOps.noUncommittedChanges()
-  const mainBranch = await gitOps.mainBranch()
-  await gitOps.fetch('origin', mainBranch)
-  await gitOps.merge('origin', mainBranch)
-  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
-  const c = await gitOps.describeCommit(baselineCommit)
 
-  if (mode === 'SILENT') {
+  // Get current branch name
+  const currentBranch = await gitOps.getBranch()
+  const currentBranchName = currentBranch.name
+
+  // Check if branch name contains a dot
+  if (currentBranchName.includes('.')) {
+    // For foo.bar, merge from foo
+    const baseBranch = currentBranchName.split('.')[0]
+    await gitOps.merge('origin', baseBranch)
+
+    if (mode === 'CHATTY') {
+      print(`Merged from ${baseBranch} into ${currentBranchName}`)
+    }
+    return baseBranch
+  } else {
+    // Original behavior for branches without dots
+    const mainBranch = await gitOps.mainBranch()
+    await gitOps.fetch('origin', mainBranch)
+    await gitOps.merge('origin', mainBranch)
+    const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+    const c = await gitOps.describeCommit(baselineCommit)
+
+    if (mode === 'SILENT') {
+      return mainBranch
+    }
+    print(`This branch's baseline is now: ${c?.data.hash.substring(0, 7)} ${c?.data.message}`)
+    const changedFiles = await gitOps.getChangedFiles(baselineCommit)
+    print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
     return mainBranch
   }
-  print(`This branch's baseline is now: ${c?.data.hash.substring(0, 7)} ${c?.data.message}`)
-  const changedFiles = await gitOps.getChangedFiles(baselineCommit)
-  print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
-  return mainBranch
 }
 
 async function listOngoing() {
