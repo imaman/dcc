@@ -304,6 +304,7 @@ const STATUS_COMMAND = 'status'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const currentVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8')).version
+
 yargs(hideBin(process.argv))
   .usage('<command> [options]')
   .version(currentVersion)
@@ -386,4 +387,5 @@ yargs(hideBin(process.argv))
   .command('open', 'Open the current PR files page in your browser', a => a, launch(openPr))
   .strict()
   .help()
-  .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv
+  .showHelpOnFail(false, GENERIC_HELP_MESSAGE)
+  .parse()
