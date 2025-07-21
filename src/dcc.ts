@@ -361,7 +361,7 @@ yargs(hideBin(process.argv))
   )
   .command('pending', `Lists all changes files (compared to branch's baseline commit)`, a => a, launch(pending))
   .command(
-    'diff',
+    ['diff', 'd'],
     `Diffs against the branch's baseline commit`,
     yargs =>
       yargs.option('tool', {
@@ -370,6 +370,12 @@ yargs(hideBin(process.argv))
         type: 'boolean',
       }),
     launch(diff),
+  )
+  .command(
+    ['difftool', 'dt'],
+    `Diffs against the branch's baseline commit using git difftool`,
+    a => a,
+    launch(() => diff({ tool: true })),
   )
   .command(
     'start-new',
