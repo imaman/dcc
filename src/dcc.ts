@@ -153,7 +153,7 @@ async function submit() {
 
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
-    print(`No PR was found for the current branch (use "dcc pr" to create one)`)
+    print(`No PR was found for the current branch (use "dcc push <title>" to create one)`)
     return
   }
 
@@ -209,7 +209,7 @@ async function listClosed(args: { user?: string }) {
   }
 }
 
-async function upload(args: { title?: string; submit?: boolean }) {
+async function push(args: { title?: string; submit?: boolean }) {
   await gitOps.notOnMainBranch()
 
   const pr = await graphqlOps.getCurrentPr()
@@ -233,7 +233,7 @@ async function upload(args: { title?: string; submit?: boolean }) {
     return
   }
 
-  logger.silly('waiting for uploaded content to be reflected back')
+  logger.silly('waiting for pushed content to be reflected back')
   for (let i = 0; i < 5; ++i) {
     const p = await graphqlOps.getCurrentPr()
     logger.silly(`attempt #${i}: ordinal=${p?.lastCommit?.ordinal}`)
@@ -245,7 +245,7 @@ async function upload(args: { title?: string; submit?: boolean }) {
     await new Promise<void>(resolve => setTimeout(() => resolve(), i * 500))
   }
 
-  throw new Error(`Something went wrong: uploaded commit was not shown on the PR so the PR was not submitted`)
+  throw new Error(`Something went wrong: pushed commit was not shown on the PR so the PR was not submitted`)
 }
 
 async function status() {
@@ -348,16 +348,15 @@ yargs(hideBin(process.argv))
     },
   )
   .command(
-    'upload',
-    'Push your changes to Gitub (creates a PR, if a title is specified)',
+    'push [title..]',
+    'Push your changes to GitHub (creates a PR, if a title is specified)',
     yargs =>
-      yargs.option('title', {
-        alias: 't',
+      yargs.positional('title', {
         type: 'string',
+        array: true,
         describe: 'A one line summary of this PR',
-        default: '',
       }),
-    launch(upload),
+    launch(args => push({ title: args.title ? args.title.join(' ') : undefined })),
   )
   .command('submit', 'Merge the current PR into the main branch', a => a, launch(submit))
   .command(
