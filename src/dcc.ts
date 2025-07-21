@@ -215,7 +215,7 @@ async function push(args: { title?: string; submit?: boolean }) {
 
   const pr = await graphqlOps.getCurrentPr()
   const isUpToDate = pr ? prIsUpToDate(pr) : false
-  logger.silly(`pr=`, pr, `isUpToDate=`, isUpToDate)
+  logger.silly(`isUpToDate=`, isUpToDate, `pr=`, pr)
 
   if (!pr || !isUpToDate) {
     print('Pushing changes')
