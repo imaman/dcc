@@ -74,14 +74,17 @@ async function catchUp(mode: 'SILENT' | 'CHATTY') {
 
   // Check if branch name contains a dot
   if (currentBranchName.includes('.')) {
-    // For foo.bar, merge from foo
-    const baseBranch = currentBranchName.split('.')[0]
-    await gitOps.merge('origin', baseBranch)
+    // For hierarchical branch names, merge from parent branch
+    // foo.bar.zoo -> merge from foo.bar
+    // foo.bar -> merge from foo
+    const parts = currentBranchName.split('.')
+    const parentBranch = parts.slice(0, -1).join('.')
+    await gitOps.merge('origin', parentBranch)
 
     if (mode === 'CHATTY') {
-      print(`Merged from ${baseBranch} into ${currentBranchName}`)
+      print(`Merged from ${parentBranch} into ${currentBranchName}`)
     }
-    return baseBranch
+    return parentBranch
   } else {
     // Original behavior for branches without dots
     const mainBranch = await gitOps.mainBranch()
