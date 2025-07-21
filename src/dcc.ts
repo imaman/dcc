@@ -210,10 +210,14 @@ async function listClosed(args: { user?: string }) {
 }
 
 async function push(args: { title?: string; submit?: boolean }) {
+  console.log(`args=`, args)
   await gitOps.notOnMainBranch()
 
   const pr = await graphqlOps.getCurrentPr()
-  if (!pr || !prIsUpToDate(pr)) {
+  const isUpToDate = pr ? prIsUpToDate(pr) : false
+  console.log(`pr=`, pr, `isUpToDate=`, isUpToDate)
+
+  if (!pr || !isUpToDate) {
     print('Pushing changes')
     await gitOps.push()
   }
