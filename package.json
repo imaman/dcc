@@ -3,9 +3,9 @@
   "version": "0.2.9",
   "description": "",
   "type": "module",
-  "main": "lib/main.js",
+  "main": "lib/dcc.js",
   "bin": {
-    "dcc": "./lib/main.js"
+    "dcc": "./lib/dcc.js"
   },
   "scripts": {
     "lint": "eslint --max-warnings 0 'src/**/*.{ts,js,json,d.ts}'",
@@ -32,20 +32,20 @@
     "source-map-support": "^0.5.13",
     "timeago.js": "^4.0.2",
     "winston": "^3.2.1",
-    "yargs": "^14.0.0",
+    "yargs": "^17.0.0",
     "zod": "^3.10.3"
   },
   "devDependencies": {
     "@types/node": "^24.0.15",
     "@types/source-map-support": "^0.5.3",
-    "@types/yargs": "11.0.0",
-    "@typescript-eslint/eslint-plugin": "^4.2.0",
-    "@typescript-eslint/parser": "^4.2.0",
-    "eslint": "6.5.1",
-    "eslint-config-prettier": "4.3.0",
-    "eslint-plugin-jest": "22.6.4",
-    "eslint-plugin-json": "^2.0.1",
-    "eslint-plugin-prettier": "^3.1.2",
+    "@types/yargs": "^17.0.33",
+    "@typescript-eslint/eslint-plugin": "^8.37.0",
+    "@typescript-eslint/parser": "^8.37.0",
+    "eslint": "^9.31.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jest": "^29.0.1",
+    "eslint-plugin-json": "^4.0.1",
+    "eslint-plugin-prettier": "^5.5.3",
     "husky": "^4.2.1",
     "lint-staged": "^9.5.0",
     "npm-run-all": "^4.1.5",

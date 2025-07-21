@@ -13,7 +13,7 @@ sourceMapSupport.install()
 
 import { simpleGit } from 'simple-git'
 import yargs from 'yargs'
-import { Arguments } from 'yargs'
+import { hideBin } from 'yargs/helpers'
 
 import { Check, GithubOps } from './GithubOps.js'
 import { GitOps } from './GitOps.js'
@@ -55,10 +55,10 @@ function format(s: string, n: number) {
   return s.padEnd(n)
 }
 
-function launch(f: (a: Arguments) => Promise<void>) {
-  return (args: Arguments) => {
+function launch<T>(f: (a: T) => Promise<void>) {
+  return (args: T & { dir?: string }) => {
     if (args.dir) {
-      process.chdir(args.dir)
+      process.chdir(args.dir as string)
     }
     return f(args)
   }
@@ -93,7 +93,7 @@ async function listOngoing() {
   }
 }
 
-async function createNew(a: Arguments) {
+async function createNew(a: { branch: string }) {
   await gitOps.noUncommittedChanges()
   const mainBranch = await gitOps.mainBranch()
   await gitOps.fetch('origin', mainBranch)
@@ -101,7 +101,7 @@ async function createNew(a: Arguments) {
   await gitOps.createBranch(a.branch, `origin/${mainBranch}`)
 }
 
-async function diff(a: Arguments) {
+async function diff(a: { tool?: boolean }) {
   const mainBranch = await gitOps.mainBranch()
   const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
   await gitOps.diff(baselineCommit, Boolean(a.tool))
@@ -176,7 +176,7 @@ async function submit() {
   await gitOps.merge('origin', mainBranch)
 }
 
-async function listClosed(args: Arguments) {
+async function listClosed(args: { user?: string }) {
   const d = await githubOps.listMerged(args.user)
 
   for (const curr of d) {
@@ -188,7 +188,7 @@ async function listClosed(args: Arguments) {
   }
 }
 
-async function upload(args: Arguments) {
+async function upload(args: { title?: string; submit?: boolean }) {
   await gitOps.notOnMainBranch()
 
   const pr = await graphqlOps.getCurrentPr()
@@ -304,7 +304,8 @@ const STATUS_COMMAND = 'status'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const currentVersion = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8')).version
-yargs
+
+yargs(hideBin(process.argv))
   .usage('<command> [options]')
   .version(currentVersion)
   .option('dir', {
@@ -329,19 +330,12 @@ yargs
     'upload',
     'Push your changes to Gitub (creates a PR, if a title is specified)',
     yargs =>
-      yargs
-        .option('title', {
-          alias: 't',
-          type: 'string',
-          describe: 'A one line summary of this PR',
-          default: '',
-        })
-        .option('submit', {
-          alias: 's',
-          type: 'boolean',
-          describe: 'Whether to also submit immediately after the upload',
-          default: '',
-        }),
+      yargs.option('title', {
+        alias: 't',
+        type: 'string',
+        describe: 'A one line summary of this PR',
+        default: '',
+      }),
     launch(upload),
   )
   .command('submit', 'Merge the current PR into the main branch', a => a, launch(submit))
@@ -393,4 +387,5 @@ yargs
   .command('open', 'Open the current PR files page in your browser', a => a, launch(openPr))
   .strict()
   .help()
-  .showHelpOnFail(false, GENERIC_HELP_MESSAGE).argv
+  .showHelpOnFail(false, GENERIC_HELP_MESSAGE)
+  .parse()
