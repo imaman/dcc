@@ -14,17 +14,17 @@ DCC (Dev Control Center) is a CLI tool for managing Git and GitHub pull request 
 # Build the TypeScript project
 yarn build
 
-# Lint the codebase (max warnings: 0)
-yarn lint
-
 # Run tests (currently no test implementation)
 yarn test
 ```
 
 ### Pre-commit/Pre-push Hooks
 
-- **Pre-commit**: Runs `yarn lint-staged` and `yarn pretty-quick --staged`
 - **Pre-push**: Runs `yarn build`
+
+### Important Instructions
+
+**NEVER run lint or yarn lint commands** - The project's linting is handled automatically by pre-commit hooks and should not be run manually.
 
 ## Architecture and Structure
 
@@ -33,7 +33,7 @@ yarn test
 1. **Main Entry Point** (`src/main.ts`):
 
    - Command-line interface using yargs
-   - Commands: status, upload, submit, catch-up, list-ongoing, list-closed, pending, diff, start-new
+   - Commands: status, push, submit, catch-up, list-ongoing, list-closed, pending, diff, start-new
    - Reads configuration from `~/.dccrc.json` (requires GitHub token)
 
 2. **GitOps** (`src/GitOps.ts`):
@@ -56,7 +56,7 @@ yarn test
 ### Key Workflows
 
 1. **Creating a new branch**: `dcc start-new -b <branch-name>`
-2. **Uploading changes**: `dcc upload -t "<PR title>"`
+2. **Pushing changes**: `dcc push <PR title>`
 3. **Submitting PR**: `dcc submit` (handles auto-merge when checks are pending)
 4. **Checking status**: `dcc status` (shows PR info, checks, mergeability)
 

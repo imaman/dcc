@@ -67,19 +67,40 @@ function launch<T>(f: (a: T) => Promise<void>) {
 async function catchUp(mode: 'SILENT' | 'CHATTY') {
   await gitOps.notOnMainBranch()
   await gitOps.noUncommittedChanges()
-  const mainBranch = await gitOps.mainBranch()
-  await gitOps.fetch('origin', mainBranch)
-  await gitOps.merge('origin', mainBranch)
-  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
-  const c = await gitOps.describeCommit(baselineCommit)
 
-  if (mode === 'SILENT') {
+  // Get current branch name
+  const currentBranch = await gitOps.getBranch()
+  const currentBranchName = currentBranch.name
+
+  // Check if branch name contains a dot
+  if (currentBranchName.includes('.')) {
+    // For hierarchical branch names, merge from parent branch
+    // foo.bar.zoo -> merge from foo.bar
+    // foo.bar -> merge from foo
+    const parts = currentBranchName.split('.')
+    const parentBranch = parts.slice(0, -1).join('.')
+    await gitOps.merge('origin', parentBranch)
+
+    if (mode === 'CHATTY') {
+      print(`Merged from ${parentBranch} into ${currentBranchName}`)
+    }
+    return parentBranch
+  } else {
+    // Original behavior for branches without dots
+    const mainBranch = await gitOps.mainBranch()
+    await gitOps.fetch('origin', mainBranch)
+    await gitOps.merge('origin', mainBranch)
+    const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+    const c = await gitOps.describeCommit(baselineCommit)
+
+    if (mode === 'SILENT') {
+      return mainBranch
+    }
+    print(`This branch's baseline is now: ${c?.data.hash.substring(0, 7)} ${c?.data.message}`)
+    const changedFiles = await gitOps.getChangedFiles(baselineCommit)
+    print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
     return mainBranch
   }
-  print(`This branch's baseline is now: ${c?.data.hash.substring(0, 7)} ${c?.data.message}`)
-  const changedFiles = await gitOps.getChangedFiles(baselineCommit)
-  print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
-  return mainBranch
 }
 
 async function listOngoing() {
@@ -132,7 +153,7 @@ async function submit() {
 
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
-    print(`No PR was found for the current branch (use "dcc pr" to create one)`)
+    print(`No PR was found for the current branch (use "dcc push <title>" to create one)`)
     return
   }
 
@@ -188,11 +209,15 @@ async function listClosed(args: { user?: string }) {
   }
 }
 
-async function upload(args: { title?: string; submit?: boolean }) {
+async function push(args: { title?: string; submit?: boolean }) {
+  logger.silly(`args=`, args)
   await gitOps.notOnMainBranch()
 
   const pr = await graphqlOps.getCurrentPr()
-  if (!pr || !prIsUpToDate(pr)) {
+  const isUpToDate = pr ? prIsUpToDate(pr) : false
+  logger.silly(`isUpToDate=`, isUpToDate, `pr=`, pr)
+
+  if (!pr || !isUpToDate) {
     print('Pushing changes')
     await gitOps.push()
   }
@@ -212,7 +237,7 @@ async function upload(args: { title?: string; submit?: boolean }) {
     return
   }
 
-  logger.silly('waiting for uploaded content to be reflected back')
+  logger.silly('waiting for pushed content to be reflected back')
   for (let i = 0; i < 5; ++i) {
     const p = await graphqlOps.getCurrentPr()
     logger.silly(`attempt #${i}: ordinal=${p?.lastCommit?.ordinal}`)
@@ -224,7 +249,7 @@ async function upload(args: { title?: string; submit?: boolean }) {
     await new Promise<void>(resolve => setTimeout(() => resolve(), i * 500))
   }
 
-  throw new Error(`Something went wrong: uploaded commit was not shown on the PR so the PR was not submitted`)
+  throw new Error(`Something went wrong: pushed commit was not shown on the PR so the PR was not submitted`)
 }
 
 async function status() {
@@ -327,16 +352,15 @@ yargs(hideBin(process.argv))
     },
   )
   .command(
-    'upload',
-    'Push your changes to Gitub (creates a PR, if a title is specified)',
+    'push [title..]',
+    'Push your changes to GitHub (creates a PR, if a title is specified)',
     yargs =>
-      yargs.option('title', {
-        alias: 't',
+      yargs.positional('title', {
         type: 'string',
+        array: true,
         describe: 'A one line summary of this PR',
-        default: '',
       }),
-    launch(upload),
+    launch(args => push({ title: args.title ? args.title.join(' ') : undefined })),
   )
   .command('submit', 'Merge the current PR into the main branch', a => a, launch(submit))
   .command(
