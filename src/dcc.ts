@@ -360,19 +360,15 @@ yargs(hideBin(process.argv))
     launch(listClosed),
   )
   .command('pending', `Lists all changes files (compared to branch's baseline commit)`, a => a, launch(pending))
+  .command(['diff', 'd'], `Diffs against the branch's baseline commit`, a => a, launch(diff))
   .command(
-    'diff',
-    `Diffs against the branch's baseline commit`,
-    yargs =>
-      yargs.option('tool', {
-        alias: 't',
-        describe: 'Use git difftool for showing the diff',
-        type: 'boolean',
-      }),
-    launch(diff),
+    ['difftool', 'dt'],
+    `Diffs against the branch's baseline commit using git difftool`,
+    a => a,
+    launch(() => diff({ tool: true })),
   )
   .command(
-    'start-new',
+    'new',
     `Creates a new branch, from the most recently merged commit.`,
     yargs =>
       yargs
