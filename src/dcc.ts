@@ -392,16 +392,14 @@ yargs(hideBin(process.argv))
     launch(() => diff({ tool: true })),
   )
   .command(
-    'new',
+    'new <branch>',
     `Creates a new branch, from the most recently merged commit.`,
     yargs =>
-      yargs
-        .option('branch', {
-          alias: 'b',
-          type: 'string',
-          describe: 'The name of the new branch',
-        })
-        .demandOption('branch'),
+      yargs.positional('branch', {
+        type: 'string',
+        describe: 'The name of the new branch',
+        demandOption: true,
+      }),
     launch(createNew),
   )
   .command('open', 'Open the current PR files page in your browser', a => a, launch(openPr))
