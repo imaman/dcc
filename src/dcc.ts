@@ -121,10 +121,9 @@ async function listOngoing() {
 
 async function createNew(a: { branch: string }) {
   await gitOps.noUncommittedChanges()
-  const mainBranch = await gitOps.mainBranch()
-  await gitOps.fetch('origin', mainBranch)
-  await gitOps.merge('origin', mainBranch)
-  await gitOps.createBranch(a.branch, `origin/${mainBranch}`)
+  const [currBranch, mainBranch] = await Promise.all([gitOps.getBranch(), gitOps.mainBranch()])
+  const newBranchName = currBranch.name === mainBranch ? a.branch : `${currBranch.name}.${a.branch}`
+  await gitOps.createBranch(newBranchName, 'HEAD')
 }
 
 async function diff(a: { tool?: boolean }) {
@@ -367,9 +366,9 @@ yargs(hideBin(process.argv))
       }),
     launch(args => push({ title: args.title ? args.title.join(' ') : undefined })),
   )
-  .command('submit', 'Merge the current PR into the main branch', a => a, launch(submit))
+  .command(['merge', 'm'], 'Merge the current PR into the main branch', a => a, launch(submit))
   .command(
-    'catch-up',
+    ['catch-up', 'c'],
     'Pull most recent changes into the main branch and into the current one',
     a => a,
     launch(async () => {
@@ -388,7 +387,7 @@ yargs(hideBin(process.argv))
       }),
     launch(listClosed),
   )
-  .command('pending', `Lists all changes files (compared to branch's baseline commit)`, a => a, launch(pending))
+  .command(['pending', 'p'], `Lists all changes files (compared to branch's baseline commit)`, a => a, launch(pending))
   .command(['diff', 'd'], `Diffs against the branch's baseline commit`, a => a, launch(diff))
   .command(
     ['difftool', 'dt'],
