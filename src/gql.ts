@@ -44,7 +44,10 @@ export class GraphqlOps {
 
   async getCurrentPr(): Promise<CurrentPrInfo | undefined> {
     const b = await this.gitOps.getBranch()
-    // const user = await this.githubOps.getUser()
+    return this.getPrOfBranch(b.name)
+  }
+
+  async getPrOfBranch(branchName: string): Promise<CurrentPrInfo | undefined> {
     const repo = await this.gitOps.getRepo()
 
     const q = `
@@ -61,7 +64,7 @@ export class GraphqlOps {
             requiresStatusChecks
           }
         }
-        ref(qualifiedName: "refs/heads/${b.name}") {
+        ref(qualifiedName: "refs/heads/${branchName}") {
           name
           associatedPullRequests(last: 10, states: OPEN) {
             nodes {
