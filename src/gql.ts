@@ -42,29 +42,6 @@ export class GraphqlOps {
     logger.silly(`enableAutoMerge(): m=\n${m}, resp=${JSON.stringify(resp, null, 2)}`)
   }
 
-  async hasPr(branchName: string): Promise<boolean> {
-    const repo = await this.gitOps.getRepo()
-
-    const q = `
-    {
-      repository(owner: "${repo.owner}", name: "${repo.name}") {
-        ref(qualifiedName: "refs/heads/${branchName}") {
-          associatedPullRequests(last: 1, states: OPEN) {
-            nodes {
-              id
-            }
-          }
-        }
-      }
-    }`
-
-    const resp = await this.authedGraphql(q)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const repository: { ref: { associatedPullRequests: { nodes: unknown[] } } } = (resp as any).repository
-    const nodes = repository?.ref?.associatedPullRequests?.nodes
-    return Boolean(nodes && nodes.length > 0)
-  }
-
   async getCurrentPr(): Promise<CurrentPrInfo | undefined> {
     const b = await this.gitOps.getBranch()
     // const user = await this.githubOps.getUser()
