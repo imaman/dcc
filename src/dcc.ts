@@ -73,33 +73,39 @@ async function catchUp(mode: 'SILENT' | 'CHATTY') {
 
   // Check if branch name contains a dot
   if (currentBranchName.includes('.')) {
-    // For hierarchical branch names, merge from parent branch
-    // foo.bar.zoo -> merge from foo.bar
-    // foo.bar -> merge from foo
+    // For hierarchical branch names, merge from parent branch only if it has a PR
+    // foo.bar.zoo -> merge from foo.bar (if foo.bar has a PR)
+    // foo.bar -> merge from foo (if foo has a PR)
     const parts = currentBranchName.split('.')
     const parentBranch = parts.slice(0, -1).join('.')
-    await gitOps.merge('origin', parentBranch)
+    const parentPr = await graphqlOps.getPrOfBranch(parentBranch)
 
-    if (mode === 'SILENT') {
-      return mainBranch
-    }
-    print(`Merged from ${parentBranch} into ${currentBranchName}`)
-    return parentBranch
-  } else {
-    // Original behavior for branches without dots
-    await gitOps.fetch('origin', mainBranch)
-    await gitOps.merge('origin', mainBranch)
-    const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
-    const c = await gitOps.describeCommit(baselineCommit)
+    if (parentPr) {
+      await gitOps.merge('origin', parentBranch)
 
-    if (mode === 'SILENT') {
-      return mainBranch
+      if (mode === 'SILENT') {
+        return mainBranch
+      }
+      print(`Merged from ${parentBranch} into ${currentBranchName}`)
+      return parentBranch
     }
-    print(`This branch's baseline is now: ${c?.data.hash.substring(0, 7)} ${c?.data.message}`)
-    const changedFiles = await gitOps.getChangedFiles(baselineCommit)
-    print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
+    // If parent branch doesn't have a PR, fall through to merge from main
+  }
+
+  // Original behavior: merge from main branch
+  // (applies to branches without dots, or hierarchical branches whose parent doesn't have a PR)
+  await gitOps.fetch('origin', mainBranch)
+  await gitOps.merge('origin', mainBranch)
+  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+  const c = await gitOps.describeCommit(baselineCommit)
+
+  if (mode === 'SILENT') {
     return mainBranch
   }
+  print(`This branch's baseline is now: ${c?.data.hash.substring(0, 7)} ${c?.data.message}`)
+  const changedFiles = await gitOps.getChangedFiles(baselineCommit)
+  print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
+  return mainBranch
 }
 
 async function listOngoing() {
