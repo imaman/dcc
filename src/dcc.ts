@@ -65,11 +65,10 @@ function launch<T>(f: (a: T) => Promise<void>) {
 }
 
 async function catchUp(mode: 'SILENT' | 'CHATTY') {
-  await gitOps.notOnMainBranch()
   await gitOps.noUncommittedChanges()
 
   // Get current branch name
-  const currentBranch = await gitOps.getBranch()
+  const [currentBranch, mainBranch] = await Promise.all([gitOps.getBranch(), gitOps.mainBranch()])
   const currentBranchName = currentBranch.name
 
   // Check if branch name contains a dot
@@ -81,13 +80,13 @@ async function catchUp(mode: 'SILENT' | 'CHATTY') {
     const parentBranch = parts.slice(0, -1).join('.')
     await gitOps.merge('origin', parentBranch)
 
-    if (mode === 'CHATTY') {
-      print(`Merged from ${parentBranch} into ${currentBranchName}`)
+    if (mode === 'SILENT') {
+      return mainBranch
     }
+    print(`Merged from ${parentBranch} into ${currentBranchName}`)
     return parentBranch
   } else {
     // Original behavior for branches without dots
-    const mainBranch = await gitOps.mainBranch()
     await gitOps.fetch('origin', mainBranch)
     await gitOps.merge('origin', mainBranch)
     const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
