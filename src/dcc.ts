@@ -396,8 +396,8 @@ yargs(hideBin(process.argv))
     launch(() => diff({ tool: true })),
   )
   .command(
-    'new <branch>',
-    `Creates a new branch, from the most recently merged commit.`,
+    ['new <branch>', 'n <branch>'],
+    'Create a new branch from current HEAD',
     yargs =>
       yargs.positional('branch', {
         type: 'string',
