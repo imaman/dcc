@@ -22,7 +22,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@octokit/auth": "^3.0.3",
     "@octokit/auth-token": "^6.0.0",
     "@octokit/graphql": "^9.0.3",
     "@octokit/rest": "^22.0.1",
