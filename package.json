@@ -28,7 +28,7 @@
     "@octokit/rest": "^22.0.1",
     "execa": "^5.1.1",
     "open": "^10.2.0",
-    "simple-git": "^3.10.0",
+    "simple-git": "^3.30.0",
     "source-map-support": "^0.5.13",
     "timeago.js": "^4.0.2",
     "winston": "^3.2.1",
