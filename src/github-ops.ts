@@ -1,4 +1,4 @@
-import { GitOps } from './GitOps.js'
+import { GitOps } from './git-ops.js'
 import { Octokit } from '@octokit/rest'
 import { logger } from './logger.js'
 

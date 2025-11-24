@@ -1,4 +1,4 @@
-import { GitOps } from './GitOps.js'
+import { GitOps } from './git-ops.js'
 import { createTokenAuth } from '@octokit/auth-token'
 import * as octokit from '@octokit/graphql'
 import { logger } from './logger.js'
