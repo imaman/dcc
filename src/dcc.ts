@@ -15,8 +15,8 @@ import { simpleGit } from 'simple-git'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'
 
-import { Check, GithubOps } from './GithubOps.js'
-import { GitOps } from './GitOps.js'
+import { Check, GithubOps } from './github-ops.js'
+import { GitOps } from './git-ops.js'
 import { CurrentPrInfo, GraphqlOps } from './gql.js'
 import { logger } from './logger.js'
 
