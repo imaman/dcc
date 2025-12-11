@@ -406,7 +406,7 @@ yargs(hideBin(process.argv))
       }),
     launch(createNew),
   )
-  .command('open', 'Open the current PR files page in your browser', a => a, launch(openPr))
+  .command(['open', 'o'], 'Open the current PR files page in your browser', a => a, launch(openPr))
   .strict()
   .help()
   .showHelpOnFail(false, GENERIC_HELP_MESSAGE)
