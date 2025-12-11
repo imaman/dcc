@@ -3,9 +3,9 @@
   "version": "0.2.9",
   "description": "",
   "type": "module",
-  "main": "lib/dcc.js",
+  "main": "lib/dcc-cli.js",
   "bin": {
-    "dcc": "./lib/dcc.js"
+    "dcc": "./lib/dcc-cli.js"
   },
   "scripts": {
     "lint": "eslint --max-warnings 0 'src/**/*.{ts,js,json,d.ts}'",
