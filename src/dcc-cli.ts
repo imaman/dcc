@@ -26,6 +26,7 @@ const DccConfigSchema = z.object({
     .string()
     .array()
     .optional(),
+  openOn: z.enum(['github', 'graphite']).optional(),
 })
 type DccConfig = z.infer<typeof DccConfigSchema>
 
@@ -296,9 +297,14 @@ async function openPr() {
     return
   }
 
-  const filesUrl = `${pr.url}/files`
-  print(`🌐 Opening ${filesUrl}`)
-  await open(filesUrl)
+  let urlToOpen: string
+  if (parsed.openOn === 'graphite') {
+    urlToOpen = pr.url.replace('github.com', 'graphite.com')
+  } else {
+    urlToOpen = `${pr.url}/files`
+  }
+  print(`🌐 Opening ${urlToOpen}`)
+  await open(urlToOpen)
 }
 
 function shouldNeverHappen(_n: never): never {
