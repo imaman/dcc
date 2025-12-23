@@ -2,6 +2,7 @@ import { GitOps } from './git-ops.js'
 import { createTokenAuth } from '@octokit/auth-token'
 import * as octokit from '@octokit/graphql'
 import { logger } from './logger.js'
+import { DccConfig } from './dcc-config.js'
 
 type MergeabilityStatus = 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
 export interface CurrentPrInfo {
@@ -10,6 +11,7 @@ export interface CurrentPrInfo {
   number: number
   mergeabilityStatus: MergeabilityStatus
   url: string
+  openUrl: string
   lastCommit?: {
     message: string
     abbreviatedOid?: string
@@ -20,8 +22,8 @@ export interface CurrentPrInfo {
 
 export class GraphqlOps {
   private readonly authedGraphql
-  constructor(token: string, private readonly gitOps: GitOps) {
-    const auth = createTokenAuth(token)
+  constructor(private readonly dccConfig: DccConfig, private readonly gitOps: GitOps) {
+    const auth = createTokenAuth(dccConfig.token)
 
     this.authedGraphql = octokit.graphql.defaults({
       request: {
@@ -192,12 +194,23 @@ export class GraphqlOps {
     const mergeabilityStatus: MergeabilityStatus =
       pr.mergeable === 'MERGEABLE' ? 'MERGEABLE' : pr.mergeable === 'CONFLICTING' ? 'CONFLICTING' : 'UNKNOWN'
 
+    let openUrl: string
+    let url: string
+    if (this.dccConfig.openOn === 'graphite') {
+      url = pr.url.replace('github.com', 'graphite.com')
+      openUrl = url
+    } else {
+      url = pr.url
+      openUrl = `${url}/files`
+    }
+
     const ret: CurrentPrInfo = {
       id: pr.id,
       title: pr.title,
       number: pr.number,
       mergeabilityStatus,
-      url: pr.url,
+      url,
+      openUrl,
       lastCommit: commit && {
         message: commit?.message,
         abbreviatedOid: commit?.abbreviatedOid,

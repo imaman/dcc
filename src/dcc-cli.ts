@@ -4,7 +4,6 @@ import * as path from 'path'
 import * as os from 'os'
 import { fileURLToPath } from 'url'
 import { Octokit } from '@octokit/rest'
-import { z } from 'zod'
 import * as timeago from 'timeago.js'
 import open from 'open'
 
@@ -19,19 +18,10 @@ import { Check, GithubOps } from './github-ops.js'
 import { GitOps } from './git-ops.js'
 import { CurrentPrInfo, GraphqlOps } from './gql.js'
 import { logger } from './logger.js'
-
-const DccConfigSchema = z.object({
-  token: z.string(),
-  prLabels: z
-    .string()
-    .array()
-    .optional(),
-  openOn: z.enum(['github', 'graphite']).optional(),
-})
-type DccConfig = z.infer<typeof DccConfigSchema>
+import { DccConfig } from './dcc-config.js'
 
 const confFile = path.resolve(os.homedir(), './.dccrc.json')
-const parsed: DccConfig = DccConfigSchema.parse(JSON.parse(fs.readFileSync(confFile, 'utf-8')))
+const parsed: DccConfig = DccConfig.parse(JSON.parse(fs.readFileSync(confFile, 'utf-8')))
 const token = parsed.token
 
 if (!token) {
@@ -42,7 +32,7 @@ const octoKit = new Octokit({ auth: token })
 
 const gitOps = new GitOps(simpleGit())
 const githubOps = new GithubOps(octoKit, gitOps, parsed.prLabels ?? [])
-const graphqlOps = new GraphqlOps(token, gitOps)
+const graphqlOps = new GraphqlOps(parsed, gitOps)
 
 function print(...args: string[]) {
   logger.info(args.join(' '))
@@ -297,14 +287,8 @@ async function openPr() {
     return
   }
 
-  let urlToOpen: string
-  if (parsed.openOn === 'graphite') {
-    urlToOpen = pr.url.replace('github.com', 'graphite.com')
-  } else {
-    urlToOpen = `${pr.url}/files`
-  }
-  print(`🌐 Opening ${urlToOpen}`)
-  await open(urlToOpen)
+  print(`🌐 Opening ${pr.openUrl}`)
+  await open(pr.openUrl)
 }
 
 function shouldNeverHappen(_n: never): never {
