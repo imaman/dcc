@@ -291,6 +291,25 @@ async function openPr() {
   await open(pr.openUrl)
 }
 
+async function checkoutPr(a: { prNumber: number }) {
+  await gitOps.noUncommittedChanges()
+
+  const repo = await gitOps.getRepo()
+  const pr = await octoKit.pulls.get({
+    pull_number: a.prNumber,
+    owner: repo.owner,
+    repo: repo.name,
+  })
+
+  const branchName = pr.data.head.ref
+
+  await gitOps.fetch('origin', branchName)
+  await gitOps.checkout(branchName)
+
+  print(`Checked out PR #${a.prNumber}: ${pr.data.title}`)
+  print(`Branch: ${branchName}`)
+}
+
 function shouldNeverHappen(_n: never): never {
   throw new Error(`Never goign to happen at runtime`)
 }
@@ -397,6 +416,17 @@ yargs(hideBin(process.argv))
     launch(createNew),
   )
   .command(['open', 'o'], 'Open the current PR files page in your browser', a => a, launch(openPr))
+  .command(
+    ['checkout <pr-number>', 'co <pr-number>'],
+    'Checkout the branch of a PR by its number',
+    yargs =>
+      yargs.positional('pr-number', {
+        type: 'number',
+        describe: 'The PR number to checkout',
+        demandOption: true,
+      }),
+    launch((a: { 'pr-number': number }) => checkoutPr({ prNumber: a['pr-number'] })),
+  )
   .strict()
   .help()
   .showHelpOnFail(false, GENERIC_HELP_MESSAGE)
