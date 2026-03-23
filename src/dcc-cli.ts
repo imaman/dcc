@@ -163,21 +163,26 @@ async function submit() {
   }
 
   const checks = await githubOps.getChecks(pr?.number)
-  const failing = checks.filter(c => c.tag === 'FAILING')
-  if (failing.length) {
-    print('some checks are failing')
-    for (const c of failing) {
-      printCheck(c)
+  const isRequired = (c: Check) => pr.requiredChecks.includes(c.name)
+  const printChecksWithRequired = (list: Check[]) => {
+    for (const c of list) {
+      printCheck(c, isRequired(c))
     }
+    const numRequired = list.filter(isRequired).length
+    print(`  (${numRequired}/${list.length} are required 🔒)`)
+  }
+
+  const failing = checks.filter(c => c.tag === 'FAILING')
+  if (failing.some(isRequired)) {
+    print('some required checks are failing')
+    printChecksWithRequired(failing)
     return
   }
 
   const pending = checks.filter(c => c.tag === 'PENDING')
-  if (pending.length) {
-    print('some checks are pending')
-    for (const c of pending) {
-      printCheck(c)
-    }
+  if (pending.some(isRequired)) {
+    print('some required checks are pending')
+    printChecksWithRequired(pending)
 
     await graphqlOps.enableAutoMerge(pr)
     print('auto merge requested')
@@ -274,8 +279,10 @@ async function status() {
     const orderOfCheck = (c: Check) =>
       c.tag === 'PASSING' ? 0 : c.tag === 'PENDING' ? 1 : c.tag === 'FAILING' ? 2 : shouldNeverHappen(c)
     for (const c of checks.sort((a, b) => orderOfCheck(a) - orderOfCheck(b))) {
-      printCheck(c)
+      printCheck(c, pr.requiredChecks.includes(c.name))
     }
+    const numRequired = checks.filter(c => pr.requiredChecks.includes(c.name)).length
+    print(`  (${numRequired}/${checks.length} are required 🔒)`)
     print()
   }
 }
@@ -314,13 +321,16 @@ function shouldNeverHappen(_n: never): never {
   throw new Error(`Never goign to happen at runtime`)
 }
 
-function printCheck(c: Check) {
+function printCheck(c: Check, required?: boolean) {
+  const req = required ? ' 🔒' : ''
   if (c.tag === 'PASSING') {
-    print(`  - ✅ ${c.name}\n`)
+    print(`  - ✅ ${c.name}${req}\n`)
   } else if (c.tag === 'PENDING') {
-    print(`  - 🚧 ${c.name} ${c.startedAt ? '(started ' + timeago.format(c.startedAt) + ')' : ''}\n    ${c.url}\n`)
+    print(
+      `  - 🚧 ${c.name}${req} ${c.startedAt ? '(started ' + timeago.format(c.startedAt) + ')' : ''}\n    ${c.url}\n`,
+    )
   } else if (c.tag === 'FAILING') {
-    print(`  - ❌ ${c.name}: ${c.summary}\n       ${c.url}`)
+    print(`  - ❌ ${c.name}${req}: ${c.summary}\n       ${c.url}`)
   } else {
     shouldNeverHappen(c)
   }

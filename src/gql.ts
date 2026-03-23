@@ -12,6 +12,7 @@ export interface CurrentPrInfo {
   mergeabilityStatus: MergeabilityStatus
   url: string
   openUrl: string
+  requiredChecks: string[]
   lastCommit?: {
     message: string
     abbreviatedOid?: string
@@ -194,6 +195,12 @@ export class GraphqlOps {
     const mergeabilityStatus: MergeabilityStatus =
       pr.mergeable === 'MERGEABLE' ? 'MERGEABLE' : pr.mergeable === 'CONFLICTING' ? 'CONFLICTING' : 'UNKNOWN'
 
+    const mainBranch = await this.gitOps.mainBranch()
+    const protectionRules = repository?.branchProtectionRules?.nodes ?? []
+    const requiredChecks = protectionRules
+      .filter(rule => rule.requiresStatusChecks && rule.matchingRefs.nodes.some(ref => ref.name === mainBranch))
+      .flatMap(rule => rule.requiredStatusCheckContexts)
+
     let openUrl: string
     let url: string
     if (this.dccConfig.openOn === 'graphite') {
@@ -211,6 +218,7 @@ export class GraphqlOps {
       mergeabilityStatus,
       url,
       openUrl,
+      requiredChecks,
       lastCommit: commit && {
         message: commit?.message,
         abbreviatedOid: commit?.abbreviatedOid,
