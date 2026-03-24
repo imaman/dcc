@@ -195,9 +195,15 @@ export class GitOps {
 
   async restoreFiles(commit: string, files: string[]): Promise<void> {
     for (const file of files) {
-      const result = await execa('git', ['cat-file', '-e', `${commit}:${file}`], { reject: false })
-      if (result.exitCode === 0) {
-        await execa('git', ['checkout', commit, '--', file])
+      let existsInBaseline = true
+      try {
+        await this.git.raw(['cat-file', '-e', `${commit}:${file}`])
+      } catch {
+        existsInBaseline = false
+      }
+
+      if (existsInBaseline) {
+        await this.git.checkout([commit, '--', file])
       } else {
         await this.git.rm([file])
       }
