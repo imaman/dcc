@@ -1,7 +1,7 @@
 {
   "name": "dev-control-center",
   "version": "0.2.9",
-  "description": "",
+  "description": "TBD",
   "type": "module",
   "main": "lib/dcc-cli.js",
   "bin": {
