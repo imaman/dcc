@@ -38,14 +38,6 @@ function print(...args: string[]) {
   logger.info(args.join(' '))
 }
 
-function format(s: string, n: number) {
-  if (s.length > n) {
-    return s.substr(0, n)
-  }
-
-  return s.padEnd(n)
-}
-
 function launch<T>(f: (a: T) => Promise<void>) {
   return (args: T & { dir?: string }) => {
     if (args.dir) {
@@ -97,17 +89,6 @@ async function catchUp(mode: 'SILENT' | 'CHATTY') {
   const changedFiles = await gitOps.getChangedFiles(baselineCommit)
   print(`${changedFiles.length} pending file${changedFiles.length !== 1 ? 's' : ''}`)
   return mainBranch
-}
-
-async function listOngoing() {
-  const d = await githubOps.listPrs()
-  for (const curr of d) {
-    print(
-      `${curr.updatedAt} ${('#' + curr.number).padStart(6)} ${format(curr.user, 10)} ${format(curr.title, 60)} ${
-        curr.url
-      }`,
-    )
-  }
 }
 
 async function createNew(a: { branch: string }) {
@@ -192,18 +173,6 @@ async function submit() {
   await githubOps.merge(pr.number)
   print('merged')
   await catchUp('CHATTY')
-}
-
-async function listClosed(args: { user?: string }) {
-  const d = await githubOps.listMerged(args.user)
-
-  for (const curr of d) {
-    print(
-      `${curr.mergedAt} ${('#' + curr.number).padStart(6)} ${format(curr.user, 10)} ${format(curr.title, 60)} ${
-        curr.url
-      }`,
-    )
-  }
 }
 
 async function push(args: { title?: string; submit?: boolean }) {
@@ -399,18 +368,6 @@ yargs(hideBin(process.argv))
     launch(async () => {
       await catchUp('CHATTY')
     }),
-  )
-  .command('list-ongoing', 'List currently open PRs', a => a, launch(listOngoing))
-  .command(
-    'list-closed',
-    'List recently merged PRs',
-    yargs =>
-      yargs.option('user', {
-        alias: 'u',
-        describe: 'Shows only PRs from that GitHub user ID. If omitted, shows from all users.',
-        type: 'string',
-      }),
-    launch(listClosed),
   )
   .command(['files', 'f'], `List all changed files (compared to branch's baseline commit)`, a => a, launch(pending))
   .command(['diff', 'd'], `Diffs against the branch's baseline commit`, a => a, launch(diff))

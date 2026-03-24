@@ -2,49 +2,6 @@ import { GitOps } from './git-ops.js'
 import { Octokit } from '@octokit/rest'
 import { logger } from './logger.js'
 
-interface PrInfo {
-  url: string
-  updatedAt: string
-  number: number
-  user: string
-  title: string
-}
-
-interface CheckStatusInfo {
-  context: string
-  required: boolean
-  state: string
-  createdAt: string
-  updatedAt: string
-}
-
-interface CheckCommitInfo {
-  ordinal: number
-  data: { hash: string; message: string }
-}
-
-interface CheckInfo {
-  statuses: CheckStatusInfo[]
-  state: string
-  sha: string
-  commit: CheckCommitInfo
-}
-
-interface MergedPrInfo {
-  mergedAt: string | null
-  title: string
-  number: number
-  url: string
-  user: string
-}
-
-function reify<T>(t: T | null | undefined): T {
-  if (t === null || t === undefined) {
-    throw new Error(`got a falsy value`)
-  }
-  return t
-}
-
 export type Check =
   | {
       tag: 'FAILING'
@@ -87,31 +44,6 @@ export class GithubOps {
     return [...pending, ...passing, ...failing]
   }
 
-  async getUser(): Promise<string> {
-    const d = await this.kit.users.getAuthenticated()
-    return d.data.login
-  }
-
-  async listPrs(): Promise<PrInfo[]> {
-    const [repo, user] = await Promise.all([this.gitOps.getRepo(), this.getUser()])
-
-    const respB = await this.kit.search.issuesAndPullRequests({
-      q: `type:pr	author:${user} state:open repo:${repo.owner}/${repo.name} sort:updated-desc`,
-    })
-    const prs = respB.data.items.map(curr => ({
-      user: reify(curr.user?.login),
-      title: curr.title,
-      url: `https://github.com/${repo.owner}/${repo.name}/pull/${curr.number}`,
-      body: curr.body,
-      updatedAt: curr.updated_at,
-      createdAt: curr.created_at,
-      number: curr.number,
-      state: curr.state,
-    }))
-
-    return prs.filter(curr => curr.user === user)
-  }
-
   async merge(prNumber: number): Promise<void> {
     const r = await this.gitOps.getRepo()
     await this.kit.pulls.merge({ owner: r.owner, repo: r.name, pull_number: prNumber, merge_method: 'squash' })
@@ -125,72 +57,6 @@ export class GithubOps {
       repo: r.name,
       issue_number: prNumber,
     })
-  }
-
-  async listChecks(): Promise<CheckInfo> {
-    const r = await this.gitOps.getRepo()
-    const b = await this.gitOps.getBranch()
-    const statusPromise = this.kit.repos.getCombinedStatusForRef({
-      owner: r.owner,
-      repo: r.name,
-      ref: b.name,
-    })
-
-    const branchPromise = await this.kit.repos.getBranch({
-      owner: r.owner,
-      repo: r.name,
-      branch: await this.gitOps.mainBranch(),
-    })
-
-    const [status, branch] = await Promise.all([statusPromise, branchPromise])
-    const required = new Set<string>(reify(branch.data.protection.required_status_checks?.contexts))
-    const statuses = status.data.statuses.map(s => ({
-      context: s.context,
-      required: required.has(s.context),
-      state: s.state,
-      createdAt: s.created_at,
-      updatedAt: s.updated_at,
-    }))
-
-    const d = await this.gitOps.describeCommit(status.data.sha)
-    if (!d) {
-      throw new Error(`Could not find sha ${status.data.sha} in git log`)
-    }
-
-    return { statuses, state: status.data.state, sha: status.data.sha, commit: d }
-  }
-
-  async listMerged(user?: string): Promise<MergedPrInfo[]> {
-    const r = await this.gitOps.getRepo()
-
-    const pageSize = user ? 100 : 40
-    const resp = await this.kit.pulls.list({
-      owner: r.owner,
-      repo: r.name,
-      state: 'closed',
-      sort: 'updated',
-      direction: 'desc',
-      per_page: pageSize,
-    })
-    let prs = resp.data.map(curr => ({
-      user: reify(curr.user?.login),
-      title: curr.title,
-      url: `https://github.com/${r.owner}/${r.name}/pull/${curr.number}`,
-      body: curr.body,
-      branch: curr.head.ref,
-      updatedAt: curr.updated_at,
-      createdAt: curr.created_at,
-      mergedAt: curr.merged_at,
-      number: curr.number,
-      state: curr.state,
-    }))
-
-    prs = prs.filter(curr => Boolean(curr.mergedAt))
-
-    if (user) {
-      prs = prs.filter(curr => curr.user === user)
-    }
-    return prs
   }
 
   async updatePrTitle(prNumber: number, newTitle: string): Promise<void> {
