@@ -114,9 +114,15 @@ async function pending() {
 }
 
 async function restore(a: { files: string[] }) {
+  await gitOps.noUncommittedChanges()
   const mainBranch = await gitOps.mainBranch()
   const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
   await gitOps.restoreFiles(baselineCommit, a.files)
+  const shortSha = await gitOps.shortSha(baselineCommit)
+  const fileList = a.files.join(' ')
+  const longMessage = `restore from ${shortSha}: ${fileList}`
+  const message = longMessage.length <= 100 ? longMessage : `restore ${a.files.length} files from ${shortSha}`
+  await gitOps.commitAll(message)
 }
 
 function prIsUpToDate(pr: CurrentPrInfo) {

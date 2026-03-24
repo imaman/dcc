@@ -209,4 +209,13 @@ export class GitOps {
       }
     }
   }
+
+  async shortSha(commit: string): Promise<string> {
+    const out = await this.git.raw(['rev-parse', '--short', commit])
+    return out.trim()
+  }
+
+  async commitAll(message: string): Promise<void> {
+    await this.git.raw(['commit', '-m', message])
+  }
 }
