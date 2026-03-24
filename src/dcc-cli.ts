@@ -38,14 +38,6 @@ function print(...args: string[]) {
   logger.info(args.join(' '))
 }
 
-function format(s: string, n: number) {
-  if (s.length > n) {
-    return s.substr(0, n)
-  }
-
-  return s.padEnd(n)
-}
-
 function launch<T>(f: (a: T) => Promise<void>) {
   return (args: T & { dir?: string }) => {
     if (args.dir) {
@@ -99,17 +91,6 @@ async function catchUp(mode: 'SILENT' | 'CHATTY') {
   return mainBranch
 }
 
-async function listOngoing() {
-  const d = await githubOps.listPrs()
-  for (const curr of d) {
-    print(
-      `${curr.updatedAt} ${('#' + curr.number).padStart(6)} ${format(curr.user, 10)} ${format(curr.title, 60)} ${
-        curr.url
-      }`,
-    )
-  }
-}
-
 async function createNew(a: { branch: string }) {
   await gitOps.noUncommittedChanges()
   const [currBranch, mainBranch] = await Promise.all([gitOps.getBranch(), gitOps.mainBranch()])
@@ -130,6 +111,18 @@ async function pending() {
   for (const curr of changedFiles) {
     print(curr)
   }
+}
+
+async function restore(a: { files: string[] }) {
+  await gitOps.noUncommittedChanges()
+  const mainBranch = await gitOps.mainBranch()
+  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+  await gitOps.restoreFiles(baselineCommit, a.files)
+  const shortSha = await gitOps.shortSha(baselineCommit)
+  const fileList = a.files.join(' ')
+  const longMessage = `restore from ${shortSha}: ${fileList}`
+  const message = longMessage.length <= 100 ? longMessage : `restore ${a.files.length} files from ${shortSha}`
+  await gitOps.commitAll(message)
 }
 
 function prIsUpToDate(pr: CurrentPrInfo) {
@@ -191,22 +184,7 @@ async function submit() {
 
   await githubOps.merge(pr.number)
   print('merged')
-  const mainBranch = await catchUp('SILENT')
-  // Order is important here: merge will work only if we have switched to the main branch.
-  await gitOps.switchToMainBranch()
-  await gitOps.merge('origin', mainBranch)
-}
-
-async function listClosed(args: { user?: string }) {
-  const d = await githubOps.listMerged(args.user)
-
-  for (const curr of d) {
-    print(
-      `${curr.mergedAt} ${('#' + curr.number).padStart(6)} ${format(curr.user, 10)} ${format(curr.title, 60)} ${
-        curr.url
-      }`,
-    )
-  }
+  await catchUp('CHATTY')
 }
 
 async function push(args: { title?: string; submit?: boolean }) {
@@ -288,6 +266,15 @@ async function status() {
 }
 
 async function openPr() {
+  const [branch, mainBranch] = await Promise.all([gitOps.getBranch(), gitOps.mainBranch()])
+  if (branch.name === mainBranch) {
+    const repo = await gitOps.getRepo()
+    const url = `https://github.com/${repo.owner}/${repo.name}/commits/${mainBranch}`
+    print(`🌐 Opening ${url}`)
+    await open(url)
+    return
+  }
+
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     print('🚫 No PR found for this branch')
@@ -358,11 +345,11 @@ yargs(hideBin(process.argv))
   .version(currentVersion)
   .option('dir', {
     alias: 'd',
-    describe: 'directroy to run at',
+    describe: 'directory to run at',
     type: 'string',
   })
   .command(
-    [STATUS_COMMAND, '*'],
+    [STATUS_COMMAND, 's', '*'],
     'Show the status of the current PR',
     a => a,
     async argv => {
@@ -375,7 +362,7 @@ yargs(hideBin(process.argv))
     },
   )
   .command(
-    'push [title..]',
+    ['push [title..]', 'p [title..]'],
     'Push your changes to GitHub (creates a PR, if a title is specified)',
     yargs =>
       yargs.positional('title', {
@@ -394,19 +381,7 @@ yargs(hideBin(process.argv))
       await catchUp('CHATTY')
     }),
   )
-  .command('list-ongoing', 'List currently open PRs', a => a, launch(listOngoing))
-  .command(
-    'list-closed',
-    'List recently merged PRs',
-    yargs =>
-      yargs.option('user', {
-        alias: 'u',
-        describe: 'Shows only PR from that GitHub user ID. If omiited shows from all users.',
-        type: 'string',
-      }),
-    launch(listClosed),
-  )
-  .command(['pending', 'p'], `Lists all changes files (compared to branch's baseline commit)`, a => a, launch(pending))
+  .command(['files', 'f'], `List all changed files (compared to branch's baseline commit)`, a => a, launch(pending))
   .command(['diff', 'd'], `Diffs against the branch's baseline commit`, a => a, launch(diff))
   .command(
     ['difftool', 'dt'],
@@ -424,6 +399,18 @@ yargs(hideBin(process.argv))
         demandOption: true,
       }),
     launch(createNew),
+  )
+  .command(
+    ['restore <files..>', 'r <files..>'],
+    `Restore files to their state at the branch's baseline commit`,
+    yargs =>
+      yargs.positional('files', {
+        type: 'string',
+        array: true,
+        describe: 'Files to restore',
+        demandOption: true,
+      }),
+    launch((a: { files: string[] }) => restore(a)),
   )
   .command(['open', 'o'], 'Open the current PR files page in your browser', a => a, launch(openPr))
   .command(

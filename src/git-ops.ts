@@ -192,4 +192,30 @@ export class GitOps {
   async diff(commit: string, useDifftool: boolean): Promise<void> {
     await execa('git', [useDifftool ? 'difftool' : 'diff', commit], { stdout: 'inherit' })
   }
+
+  async restoreFiles(commit: string, files: string[]): Promise<void> {
+    for (const file of files) {
+      let existsInBaseline = true
+      try {
+        await this.git.raw(['cat-file', '-e', `${commit}:${file}`])
+      } catch {
+        existsInBaseline = false
+      }
+
+      if (existsInBaseline) {
+        await this.git.checkout([commit, '--', file])
+      } else {
+        await this.git.rm([file])
+      }
+    }
+  }
+
+  async shortSha(commit: string): Promise<string> {
+    const out = await this.git.raw(['rev-parse', '--short', commit])
+    return out.trim()
+  }
+
+  async commitAll(message: string): Promise<void> {
+    await this.git.raw(['commit', '-m', message])
+  }
 }
