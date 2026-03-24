@@ -191,10 +191,7 @@ async function submit() {
 
   await githubOps.merge(pr.number)
   print('merged')
-  const mainBranch = await catchUp('SILENT')
-  // Order is important here: merge will work only if we have switched to the main branch.
-  await gitOps.switchToMainBranch()
-  await gitOps.merge('origin', mainBranch)
+  await catchUp('CHATTY')
 }
 
 async function listClosed(args: { user?: string }) {
