@@ -113,6 +113,12 @@ async function pending() {
   }
 }
 
+async function restore(a: { files: string[] }) {
+  const mainBranch = await gitOps.mainBranch()
+  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+  await gitOps.restoreFiles(baselineCommit, a.files)
+}
+
 function prIsUpToDate(pr: CurrentPrInfo) {
   if (!pr.lastCommit) {
     throw new Error(`Failed to retreive information about the PR's latest commit`)
@@ -387,6 +393,18 @@ yargs(hideBin(process.argv))
         demandOption: true,
       }),
     launch(createNew),
+  )
+  .command(
+    ['restore <files..>', 'r <files..>'],
+    `Restore files to their state at the branch's baseline commit`,
+    yargs =>
+      yargs.positional('files', {
+        type: 'string',
+        array: true,
+        describe: 'Files to restore',
+        demandOption: true,
+      }),
+    launch((a: { files: string[] }) => restore(a)),
   )
   .command(['open', 'o'], 'Open the current PR files page in your browser', a => a, launch(openPr))
   .command(

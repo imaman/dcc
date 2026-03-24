@@ -192,4 +192,15 @@ export class GitOps {
   async diff(commit: string, useDifftool: boolean): Promise<void> {
     await execa('git', [useDifftool ? 'difftool' : 'diff', commit], { stdout: 'inherit' })
   }
+
+  async restoreFiles(commit: string, files: string[]): Promise<void> {
+    for (const file of files) {
+      const result = await execa('git', ['cat-file', '-e', `${commit}:${file}`], { reject: false })
+      if (result.exitCode === 0) {
+        await execa('git', ['checkout', commit, '--', file])
+      } else {
+        await this.git.rm([file])
+      }
+    }
+  }
 }
