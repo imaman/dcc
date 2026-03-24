@@ -288,6 +288,15 @@ async function status() {
 }
 
 async function openPr() {
+  const [branch, mainBranch] = await Promise.all([gitOps.getBranch(), gitOps.mainBranch()])
+  if (branch.name === mainBranch) {
+    const repo = await gitOps.getRepo()
+    const url = `https://github.com/${repo.owner}/${repo.name}/commits/${mainBranch}`
+    print(`🌐 Opening ${url}`)
+    await open(url)
+    return
+  }
+
   const pr = await graphqlOps.getCurrentPr()
   if (!pr) {
     print('🚫 No PR found for this branch')
