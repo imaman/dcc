@@ -364,7 +364,7 @@ yargs(hideBin(process.argv))
   .version(currentVersion)
   .option('dir', {
     alias: 'd',
-    describe: 'directroy to run at',
+    describe: 'directory to run at',
     type: 'string',
   })
   .command(
@@ -407,12 +407,12 @@ yargs(hideBin(process.argv))
     yargs =>
       yargs.option('user', {
         alias: 'u',
-        describe: 'Shows only PR from that GitHub user ID. If omiited shows from all users.',
+        describe: 'Shows only PRs from that GitHub user ID. If omitted, shows from all users.',
         type: 'string',
       }),
     launch(listClosed),
   )
-  .command(['files', 'f'], `Lists all changed files (compared to branch's baseline commit)`, a => a, launch(pending))
+  .command(['files', 'f'], `List all changed files (compared to branch's baseline commit)`, a => a, launch(pending))
   .command(['diff', 'd'], `Diffs against the branch's baseline commit`, a => a, launch(diff))
   .command(
     ['difftool', 'dt'],
