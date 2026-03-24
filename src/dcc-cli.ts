@@ -368,7 +368,7 @@ yargs(hideBin(process.argv))
     type: 'string',
   })
   .command(
-    [STATUS_COMMAND, '*'],
+    [STATUS_COMMAND, 's', '*'],
     'Show the status of the current PR',
     a => a,
     async argv => {
@@ -381,7 +381,7 @@ yargs(hideBin(process.argv))
     },
   )
   .command(
-    'push [title..]',
+    ['push [title..]', 'p [title..]'],
     'Push your changes to GitHub (creates a PR, if a title is specified)',
     yargs =>
       yargs.positional('title', {
@@ -412,7 +412,7 @@ yargs(hideBin(process.argv))
       }),
     launch(listClosed),
   )
-  .command(['pending', 'p'], `Lists all changes files (compared to branch's baseline commit)`, a => a, launch(pending))
+  .command(['files', 'f'], `Lists all changed files (compared to branch's baseline commit)`, a => a, launch(pending))
   .command(['diff', 'd'], `Diffs against the branch's baseline commit`, a => a, launch(diff))
   .command(
     ['difftool', 'dt'],
