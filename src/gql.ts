@@ -46,6 +46,10 @@ export class GraphqlOps {
   }
 
   async getCurrentPr(): Promise<CurrentPrInfo | undefined> {
+    const remoteBranch = await this.gitOps.getRemoteBranchName()
+    if (remoteBranch) {
+      return this.getPrOfBranch(remoteBranch)
+    }
     const b = await this.gitOps.getBranch()
     return this.getPrOfBranch(b.name)
   }
