@@ -219,6 +219,10 @@ export class GitOps {
     await this.git.raw(['commit', '-m', message])
   }
 
+  async renameBranch(newName: string): Promise<void> {
+    await this.git.branch(['-m', newName])
+  }
+
   async deleteBranch(branchName: string): Promise<void> {
     await this.git.branch(['-D', branchName])
   }

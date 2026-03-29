@@ -63,7 +63,7 @@ export class GithubOps {
     const b = await this.gitOps.getRepo()
     await this.kit.pulls.update({ owner: b.owner, repo: b.name, pull_number: prNumber, title: newTitle })
   }
-  async createPr(title: string): Promise<void> {
+  async createPr(title: string): Promise<number> {
     const b = await this.gitOps.getBranch()
     const r = await this.gitOps.getRepo()
 
@@ -104,5 +104,7 @@ export class GithubOps {
       issue_number: issueNumber,
       labels: this.prLabels,
     })
+
+    return issueNumber
   }
 }
