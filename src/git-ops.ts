@@ -218,4 +218,12 @@ export class GitOps {
   async commitAll(message: string): Promise<void> {
     await this.git.raw(['commit', '-m', message])
   }
+
+  async deleteBranch(branchName: string): Promise<void> {
+    await this.git.branch(['-D', branchName])
+  }
+
+  async pull(): Promise<void> {
+    await this.git.pull()
+  }
 }
