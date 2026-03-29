@@ -9,4 +9,5 @@ export const DccConfig = z.object({
   openOn: z.enum(['github', 'graphite']).optional(),
 })
 
-export type DccConfig = z.infer<typeof DccConfig> // eslint-disable-line no-redeclare
+// eslint-disable-next-line no-redeclare
+export type DccConfig = z.infer<typeof DccConfig>

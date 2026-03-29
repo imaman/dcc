@@ -208,7 +208,9 @@ async function push(args: { title?: string; submit?: boolean }) {
   if (currentPr) {
     await githubOps.updatePrTitle(currentPr.number, args.title)
   } else {
-    await githubOps.createPr(args.title)
+    const prNumber = await githubOps.createPr(args.title)
+    await gitOps.renameBranch(String(prNumber))
+    print(`Local branch renamed to ${prNumber}`)
   }
 
   if (!args.submit) {

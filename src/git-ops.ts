@@ -85,6 +85,16 @@ export class GitOps {
     return bs.branches[bs.current]
   }
 
+  async getRemoteBranchName(): Promise<string | undefined> {
+    try {
+      const out = await this.git.raw(['rev-parse', '--abbrev-ref', '@{upstream}'])
+      // origin/my-branch -> my-branch
+      return out.trim().replace(/^[^/]+\//, '')
+    } catch {
+      return undefined
+    }
+  }
+
   async noUncommittedChanges(): Promise<void> {
     const d = await this.git.diffSummary()
     if (d.files.length) {
@@ -217,6 +227,14 @@ export class GitOps {
 
   async commitAll(message: string): Promise<void> {
     await this.git.raw(['commit', '-m', message])
+  }
+
+  async renameBranch(newName: string): Promise<void> {
+    const remoteBranch = await this.getRemoteBranchName()
+    await this.git.branch(['-m', newName])
+    if (remoteBranch) {
+      await this.git.branch(['--set-upstream-to', `origin/${remoteBranch}`])
+    }
   }
 
   async deleteBranch(branchName: string): Promise<void> {
