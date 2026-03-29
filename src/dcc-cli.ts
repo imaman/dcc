@@ -285,6 +285,36 @@ async function openPr() {
   await open(pr.openUrl)
 }
 
+async function close() {
+  await gitOps.notOnMainBranch()
+  await gitOps.noUncommittedChanges()
+
+  const pr = await graphqlOps.getCurrentPr()
+  if (pr) {
+    print(`Cannot close: there is an open PR (#${pr.number}: ${pr.title})`)
+    return
+  }
+
+  const mainBranch = await gitOps.mainBranch()
+  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+  const changedFiles = await gitOps.getChangedFiles(baselineCommit)
+  if (changedFiles.length > 0) {
+    print(`Cannot close: there are ${changedFiles.length} changed file(s)`)
+    return
+  }
+
+  const branch = await gitOps.getBranch()
+  const branchName = branch.name
+
+  await gitOps.checkout(mainBranch)
+  await gitOps.deleteBranch(branchName)
+  print(`Deleted branch ${branchName}`)
+
+  await gitOps.fetch('origin', mainBranch)
+  await gitOps.merge('origin', mainBranch)
+  print(`Synced ${mainBranch}`)
+}
+
 async function checkoutPr(a: { prNumber: number }) {
   await gitOps.noUncommittedChanges()
 
@@ -413,6 +443,12 @@ yargs(hideBin(process.argv))
     launch((a: { files: string[] }) => restore(a)),
   )
   .command(['open', 'o'], 'Open the current PR files page in your browser', a => a, launch(openPr))
+  .command(
+    ['close', 'cl'],
+    'Delete the current branch and switch to main (only if no open PR and no diff)',
+    a => a,
+    launch(close),
+  )
   .command(
     ['checkout <pr-number>', 'co <pr-number>'],
     'Checkout the branch of a PR by its number',
