@@ -230,7 +230,11 @@ export class GitOps {
   }
 
   async renameBranch(newName: string): Promise<void> {
+    const remoteBranch = await this.getRemoteBranchName()
     await this.git.branch(['-m', newName])
+    if (remoteBranch) {
+      await this.git.branch(['--set-upstream-to', `origin/${remoteBranch}`])
+    }
   }
 
   async deleteBranch(branchName: string): Promise<void> {
