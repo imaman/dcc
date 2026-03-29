@@ -91,10 +91,29 @@ async function catchUp(mode: 'SILENT' | 'CHATTY') {
   return mainBranch
 }
 
-async function createNew(a: { branch: string }) {
+function generateBranchName() {
+  const now = new Date()
+  const hh = String(now.getHours()).padStart(2, '0')
+  const mm = String(now.getMinutes()).padStart(2, '0')
+  const ddd = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'][now.getDay()]
+  const yyyy = now.getFullYear()
+  const mo = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  return `${hh}${mm}-${ddd}-${yyyy}-${mo}-${dd}`
+}
+
+async function createNew(a: { branch?: string }) {
   await gitOps.noUncommittedChanges()
+  const branch = a.branch ?? generateBranchName()
   const [currBranch, mainBranch] = await Promise.all([gitOps.getBranch(), gitOps.mainBranch()])
-  const newBranchName = currBranch.name === mainBranch ? a.branch : `${currBranch.name}.${a.branch}`
+  const prefix = currBranch.name === mainBranch ? '' : `${currBranch.name}.`
+  let newBranchName = `${prefix}${branch}`
+  if (await gitOps.branchExists(newBranchName)) {
+    const suffix = Math.random()
+      .toString(36)
+      .slice(2, 6)
+    newBranchName = `${prefix}${branch}-${suffix}`
+  }
   await gitOps.createBranch(newBranchName, 'HEAD')
 }
 
@@ -422,13 +441,12 @@ yargs(hideBin(process.argv))
     launch(() => diff({ tool: true })),
   )
   .command(
-    ['new <branch>', 'n <branch>'],
+    ['new [branch]', 'n [branch]'],
     'Create a new branch from current HEAD',
     yargs =>
       yargs.positional('branch', {
         type: 'string',
-        describe: 'The name of the new branch',
-        demandOption: true,
+        describe: 'The name of the new branch (default: hhmm-ddd-yyyy-mm-dd)',
       }),
     launch(createNew),
   )
