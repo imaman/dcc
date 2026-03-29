@@ -85,6 +85,11 @@ export class GitOps {
     return bs.branches[bs.current]
   }
 
+  async branchExists(name: string): Promise<boolean> {
+    const bs = await this.git.branch([])
+    return name in bs.branches
+  }
+
   async getRemoteBranchName(): Promise<string | undefined> {
     try {
       const out = await this.git.raw(['rev-parse', '--abbrev-ref', '@{upstream}'])
