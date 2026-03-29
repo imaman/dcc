@@ -222,8 +222,4 @@ export class GitOps {
   async deleteBranch(branchName: string): Promise<void> {
     await this.git.branch(['-D', branchName])
   }
-
-  async pull(): Promise<void> {
-    await this.git.pull()
-  }
 }
