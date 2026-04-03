@@ -465,7 +465,7 @@ yargs(hideBin(process.argv))
   )
   .command(['open', 'o'], 'Open the current PR files page in your browser', a => a, launch(openPr))
   .command(
-    ['close', 'cl'],
+    ['delete', 'del'],
     'Delete the current branch and switch to main (only if no open PR and no diff)',
     a => a,
     launch(close),
