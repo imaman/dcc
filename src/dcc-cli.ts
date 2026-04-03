@@ -309,7 +309,6 @@ async function openPr() {
 async function close() {
   await gitOps.notOnMainBranch()
   await gitOps.noUncommittedChanges()
-  await catchUp('SILENT')
 
   const pr = await graphqlOps.getCurrentPr()
   if (pr) {
