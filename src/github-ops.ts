@@ -98,12 +98,14 @@ export class GithubOps {
       throw new Error(`Falsy issue number`)
     }
 
-    await this.kit.issues.update({
-      owner: r.owner,
-      repo: r.name,
-      issue_number: issueNumber,
-      labels: this.prLabels,
-    })
+    if (this.prLabels.length > 0) {
+      await this.kit.issues.addLabels({
+        owner: r.owner,
+        repo: r.name,
+        issue_number: issueNumber,
+        labels: this.prLabels,
+      })
+    }
 
     return issueNumber
   }
