@@ -312,16 +312,21 @@ async function close() {
 
   const pr = await graphqlOps.getCurrentPr()
   if (pr) {
-    print(`Cannot close: there is an open PR (#${pr.number}: ${pr.title})`)
+    print(`Cannot delete: there is an open PR (#${pr.number}: ${pr.title})`)
     return
   }
 
   const mainBranch = await gitOps.mainBranch()
-  const baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
-  const changedFiles = await gitOps.getChangedFiles(baselineCommit)
+  let baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+  let changedFiles = await gitOps.getChangedFiles(baselineCommit)
   if (changedFiles.length > 0) {
-    print(`Cannot close: there are ${changedFiles.length} changed file(s)`)
-    return
+    await catchUp('CHATTY')
+    baselineCommit = await gitOps.findBaselineCommit(`origin/${mainBranch}`)
+    changedFiles = await gitOps.getChangedFiles(baselineCommit)
+    if (changedFiles.length > 0) {
+      print(`Cannot delete: there are ${changedFiles.length} changed file(s)`)
+      return
+    }
   }
 
   const branch = await gitOps.getBranch()
