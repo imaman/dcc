@@ -102,8 +102,10 @@ function generateBranchName() {
   return `${hh}${mm}-${ddd}-${yyyy}-${mo}-${dd}`
 }
 
-async function createNew(a: { branch?: string }) {
-  await gitOps.noUncommittedChanges()
+async function createNew(a: { branch?: string; force?: boolean }) {
+  if (!a.force) {
+    await gitOps.noUncommittedChanges()
+  }
   const branch = a.branch ?? generateBranchName()
   const [currBranch, mainBranch] = await Promise.all([gitOps.getBranch(), gitOps.mainBranch()])
   const prefix = currBranch.name === mainBranch ? '' : `${currBranch.name}.`
@@ -449,10 +451,17 @@ yargs(hideBin(process.argv))
     ['new [branch]', 'n [branch]'],
     'Create a new branch from current HEAD',
     yargs =>
-      yargs.positional('branch', {
-        type: 'string',
-        describe: 'The name of the new branch (default: hhmm-ddd-yyyy-mm-dd)',
-      }),
+      yargs
+        .positional('branch', {
+          type: 'string',
+          describe: 'The name of the new branch (default: hhmm-ddd-yyyy-mm-dd)',
+        })
+        .option('force', {
+          alias: 'f',
+          type: 'boolean',
+          default: false,
+          describe: 'Allow creating the branch even with uncommitted changes',
+        }),
     launch(createNew),
   )
   .command(
