@@ -2,8 +2,23 @@ import { GitOps } from './git-ops.js'
 import { createTokenAuth } from '@octokit/auth-token'
 import * as octokit from '@octokit/graphql'
 import { Octokit } from '@octokit/rest'
+import { z } from 'zod'
 import { logger } from './logger.js'
 import { DccConfig } from './dcc-config.js'
+
+const BranchRulesSchema = z.array(
+  z
+    .object({
+      type: z.string(),
+      parameters: z
+        .object({
+          required_status_checks: z.array(z.object({ context: z.string() }).passthrough()).optional(),
+        })
+        .passthrough()
+        .optional(),
+    })
+    .passthrough(),
+)
 
 type MergeabilityStatus = 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
 export interface CurrentPrInfo {
@@ -41,18 +56,14 @@ export class GraphqlOps {
         repo: name,
         branch,
       })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const rules = (resp.data as any[]) ?? []
-      const contexts: string[] = []
-      for (const rule of rules) {
-        if (rule?.type !== 'required_status_checks') continue
-        const list = rule?.parameters?.required_status_checks ?? []
-        for (const c of list) {
-          if (typeof c?.context === 'string') contexts.push(c.context)
-        }
-      }
-      return contexts
+      const rules = BranchRulesSchema.parse(resp.data)
+      return rules
+        .filter(r => r.type === 'required_status_checks')
+        .flatMap(r => r.parameters?.required_status_checks ?? [])
+        .map(c => c.context)
     } catch (err) {
+      // Token may lack the scope to read rulesets, or the host may be an older GHE without this endpoint.
+      // Degrade to "no ruleset-derived required checks" so callers fall back to branchProtectionRules only.
       logger.silly(`getRulesetRequiredChecks failed: ${err}`)
       return []
     }
