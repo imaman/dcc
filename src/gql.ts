@@ -1,24 +1,8 @@
 import { GitOps } from './git-ops.js'
 import { createTokenAuth } from '@octokit/auth-token'
 import * as octokit from '@octokit/graphql'
-import { Octokit } from '@octokit/rest'
-import { z } from 'zod'
 import { logger } from './logger.js'
 import { DccConfig } from './dcc-config.js'
-
-const BranchRulesSchema = z.array(
-  z
-    .object({
-      type: z.string(),
-      parameters: z
-        .object({
-          required_status_checks: z.array(z.object({ context: z.string() }).passthrough()).optional(),
-        })
-        .passthrough()
-        .optional(),
-    })
-    .passthrough(),
-)
 
 type MergeabilityStatus = 'MERGEABLE' | 'CONFLICTING' | 'UNKNOWN'
 export interface CurrentPrInfo {
@@ -39,7 +23,7 @@ export interface CurrentPrInfo {
 
 export class GraphqlOps {
   private readonly authedGraphql
-  constructor(private readonly dccConfig: DccConfig, private readonly gitOps: GitOps, private readonly kit: Octokit) {
+  constructor(private readonly dccConfig: DccConfig, private readonly gitOps: GitOps) {
     const auth = createTokenAuth(dccConfig.token)
 
     this.authedGraphql = octokit.graphql.defaults({
@@ -47,26 +31,6 @@ export class GraphqlOps {
         hook: auth.hook,
       },
     })
-  }
-
-  private async getRulesetRequiredChecks(owner: string, name: string, branch: string): Promise<string[]> {
-    try {
-      const resp = await this.kit.request('GET /repos/{owner}/{repo}/rules/branches/{branch}', {
-        owner,
-        repo: name,
-        branch,
-      })
-      const rules = BranchRulesSchema.parse(resp.data)
-      return rules
-        .filter(r => r.type === 'required_status_checks')
-        .flatMap(r => r.parameters?.required_status_checks ?? [])
-        .map(c => c.context)
-    } catch (err) {
-      // Token may lack the scope to read rulesets, or the host may be an older GHE without this endpoint.
-      // Degrade to "no ruleset-derived required checks" so callers fall back to branchProtectionRules only.
-      logger.silly(`getRulesetRequiredChecks failed: ${err}`)
-      return []
-    }
   }
 
   async enableAutoMerge(pr: CurrentPrInfo): Promise<void> {
@@ -237,11 +201,9 @@ export class GraphqlOps {
 
     const mainBranch = await this.gitOps.mainBranch()
     const protectionRules = repository?.branchProtectionRules?.nodes ?? []
-    const fromProtection = protectionRules
+    const requiredChecks = protectionRules
       .filter(rule => rule.requiresStatusChecks && rule.matchingRefs.nodes.some(ref => ref.name === mainBranch))
       .flatMap(rule => rule.requiredStatusCheckContexts)
-    const fromRulesets = await this.getRulesetRequiredChecks(repo.owner, repo.name, mainBranch)
-    const requiredChecks = [...new Set([...fromProtection, ...fromRulesets])]
 
     let openUrl: string
     let url: string

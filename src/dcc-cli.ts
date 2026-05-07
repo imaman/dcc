@@ -32,7 +32,7 @@ const octoKit = new Octokit({ auth: token })
 
 const gitOps = new GitOps(simpleGit())
 const githubOps = new GithubOps(octoKit, gitOps, parsed.prLabels ?? [])
-const graphqlOps = new GraphqlOps(parsed, gitOps, octoKit)
+const graphqlOps = new GraphqlOps(parsed, gitOps)
 
 function print(...args: string[]) {
   logger.info(args.join(' '))
@@ -177,7 +177,9 @@ async function submit() {
   }
 
   const checks = await githubOps.getChecks(pr?.number)
-  const isRequired = (c: Check) => pr.requiredChecks.includes(c.name)
+  const fromRulesets = await githubOps.getRulesetRequiredChecks(await gitOps.mainBranch())
+  const required = new Set([...pr.requiredChecks, ...fromRulesets])
+  const isRequired = (c: Check) => required.has(c.name)
   const printChecksWithRequired = (list: Check[]) => {
     for (const c of list) {
       printCheck(c, isRequired(c))
@@ -262,6 +264,8 @@ async function status() {
     print('No PR was created for this branch')
   } else {
     const checks: Check[] = await githubOps.getChecks(pr?.number)
+    const fromRulesets = await githubOps.getRulesetRequiredChecks(await gitOps.mainBranch())
+    const required = new Set([...pr.requiredChecks, ...fromRulesets])
     print(`PR #${pr.number}: ${pr.title}`)
     print(pr.url)
     if (pr.lastCommit) {
@@ -280,9 +284,9 @@ async function status() {
     const orderOfCheck = (c: Check) =>
       c.tag === 'PASSING' ? 0 : c.tag === 'PENDING' ? 1 : c.tag === 'FAILING' ? 2 : shouldNeverHappen(c)
     for (const c of checks.sort((a, b) => orderOfCheck(a) - orderOfCheck(b))) {
-      printCheck(c, pr.requiredChecks.includes(c.name))
+      printCheck(c, required.has(c.name))
     }
-    const numRequired = checks.filter(c => pr.requiredChecks.includes(c.name)).length
+    const numRequired = checks.filter(c => required.has(c.name)).length
     print(`  (${numRequired}/${checks.length} are required 🔒)`)
     print()
   }

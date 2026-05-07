@@ -1,6 +1,21 @@
 import { GitOps } from './git-ops.js'
 import { Octokit } from '@octokit/rest'
+import { z } from 'zod'
 import { logger } from './logger.js'
+
+const BranchRulesSchema = z.array(
+  z
+    .object({
+      type: z.string(),
+      parameters: z
+        .object({
+          required_status_checks: z.array(z.object({ context: z.string() }).passthrough()).optional(),
+        })
+        .passthrough()
+        .optional(),
+    })
+    .passthrough(),
+)
 
 export type Check =
   | {
@@ -42,6 +57,27 @@ export class GithubOps {
       .map(cr => ({ tag: 'FAILING', name: cr.name, url: cr.html_url, summary: cr.output.summary }))
 
     return [...pending, ...passing, ...failing]
+  }
+
+  async getRulesetRequiredChecks(branch: string): Promise<string[]> {
+    const r = await this.gitOps.getRepo()
+    try {
+      const resp = await this.kit.request('GET /repos/{owner}/{repo}/rules/branches/{branch}', {
+        owner: r.owner,
+        repo: r.name,
+        branch,
+      })
+      const rules = BranchRulesSchema.parse(resp.data)
+      return rules
+        .filter(rule => rule.type === 'required_status_checks')
+        .flatMap(rule => rule.parameters?.required_status_checks ?? [])
+        .map(c => c.context)
+    } catch (err) {
+      // Token may lack the scope to read rulesets, or the host may be an older GHE without this endpoint.
+      // Degrade to "no ruleset-derived required checks" so callers fall back to branchProtectionRules only.
+      logger.silly(`getRulesetRequiredChecks failed: ${err}`)
+      return []
+    }
   }
 
   async merge(prNumber: number): Promise<void> {
