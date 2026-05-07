@@ -32,7 +32,7 @@ const octoKit = new Octokit({ auth: token })
 
 const gitOps = new GitOps(simpleGit())
 const githubOps = new GithubOps(octoKit, gitOps, parsed.prLabels ?? [])
-const graphqlOps = new GraphqlOps(parsed, gitOps)
+const graphqlOps = new GraphqlOps(parsed, gitOps, octoKit)
 
 function print(...args: string[]) {
   logger.info(args.join(' '))

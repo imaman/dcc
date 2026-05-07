@@ -1,6 +1,7 @@
 import { GitOps } from './git-ops.js'
 import { createTokenAuth } from '@octokit/auth-token'
 import * as octokit from '@octokit/graphql'
+import { Octokit } from '@octokit/rest'
 import { logger } from './logger.js'
 import { DccConfig } from './dcc-config.js'
 
@@ -23,7 +24,7 @@ export interface CurrentPrInfo {
 
 export class GraphqlOps {
   private readonly authedGraphql
-  constructor(private readonly dccConfig: DccConfig, private readonly gitOps: GitOps) {
+  constructor(private readonly dccConfig: DccConfig, private readonly gitOps: GitOps, private readonly kit: Octokit) {
     const auth = createTokenAuth(dccConfig.token)
 
     this.authedGraphql = octokit.graphql.defaults({
@@ -31,6 +32,30 @@ export class GraphqlOps {
         hook: auth.hook,
       },
     })
+  }
+
+  private async getRulesetRequiredChecks(owner: string, name: string, branch: string): Promise<string[]> {
+    try {
+      const resp = await this.kit.request('GET /repos/{owner}/{repo}/rules/branches/{branch}', {
+        owner,
+        repo: name,
+        branch,
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const rules = (resp.data as any[]) ?? []
+      const contexts: string[] = []
+      for (const rule of rules) {
+        if (rule?.type !== 'required_status_checks') continue
+        const list = rule?.parameters?.required_status_checks ?? []
+        for (const c of list) {
+          if (typeof c?.context === 'string') contexts.push(c.context)
+        }
+      }
+      return contexts
+    } catch (err) {
+      logger.silly(`getRulesetRequiredChecks failed: ${err}`)
+      return []
+    }
   }
 
   async enableAutoMerge(pr: CurrentPrInfo): Promise<void> {
@@ -201,9 +226,11 @@ export class GraphqlOps {
 
     const mainBranch = await this.gitOps.mainBranch()
     const protectionRules = repository?.branchProtectionRules?.nodes ?? []
-    const requiredChecks = protectionRules
+    const fromProtection = protectionRules
       .filter(rule => rule.requiresStatusChecks && rule.matchingRefs.nodes.some(ref => ref.name === mainBranch))
       .flatMap(rule => rule.requiredStatusCheckContexts)
+    const fromRulesets = await this.getRulesetRequiredChecks(repo.owner, repo.name, mainBranch)
+    const requiredChecks = [...new Set([...fromProtection, ...fromRulesets])]
 
     let openUrl: string
     let url: string
