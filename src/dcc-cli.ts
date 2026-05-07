@@ -176,8 +176,11 @@ async function submit() {
     return
   }
 
-  const checks = await githubOps.getChecks(pr?.number)
-  const isRequired = (c: Check) => pr.requiredChecks.includes(c.name)
+  const [checks, required] = await Promise.all([
+    githubOps.getChecks(pr.number),
+    gitOps.mainBranch().then(b => githubOps.getAllRequiredChecks(b, pr)),
+  ])
+  const isRequired = (c: Check) => required.has(c.name)
   const printChecksWithRequired = (list: Check[]) => {
     for (const c of list) {
       printCheck(c, isRequired(c))
@@ -261,7 +264,10 @@ async function status() {
   if (!pr) {
     print('No PR was created for this branch')
   } else {
-    const checks: Check[] = await githubOps.getChecks(pr?.number)
+    const [checks, required] = await Promise.all([
+      githubOps.getChecks(pr.number),
+      gitOps.mainBranch().then(b => githubOps.getAllRequiredChecks(b, pr)),
+    ])
     print(`PR #${pr.number}: ${pr.title}`)
     print(pr.url)
     if (pr.lastCommit) {
@@ -280,9 +286,9 @@ async function status() {
     const orderOfCheck = (c: Check) =>
       c.tag === 'PASSING' ? 0 : c.tag === 'PENDING' ? 1 : c.tag === 'FAILING' ? 2 : shouldNeverHappen(c)
     for (const c of checks.sort((a, b) => orderOfCheck(a) - orderOfCheck(b))) {
-      printCheck(c, pr.requiredChecks.includes(c.name))
+      printCheck(c, required.has(c.name))
     }
-    const numRequired = checks.filter(c => pr.requiredChecks.includes(c.name)).length
+    const numRequired = checks.filter(c => required.has(c.name)).length
     print(`  (${numRequired}/${checks.length} are required 🔒)`)
     print()
   }
