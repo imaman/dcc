@@ -177,8 +177,7 @@ async function submit() {
   }
 
   const checks = await githubOps.getChecks(pr?.number)
-  const fromRulesets = await githubOps.getRulesetRequiredChecks(await gitOps.mainBranch())
-  const required = new Set([...pr.requiredChecks, ...fromRulesets])
+  const required = await githubOps.getAllRequiredChecks(await gitOps.mainBranch(), pr)
   const isRequired = (c: Check) => required.has(c.name)
   const printChecksWithRequired = (list: Check[]) => {
     for (const c of list) {
@@ -264,8 +263,7 @@ async function status() {
     print('No PR was created for this branch')
   } else {
     const checks: Check[] = await githubOps.getChecks(pr?.number)
-    const fromRulesets = await githubOps.getRulesetRequiredChecks(await gitOps.mainBranch())
-    const required = new Set([...pr.requiredChecks, ...fromRulesets])
+    const required = await githubOps.getAllRequiredChecks(await gitOps.mainBranch(), pr)
     print(`PR #${pr.number}: ${pr.title}`)
     print(pr.url)
     if (pr.lastCommit) {

@@ -59,6 +59,11 @@ export class GithubOps {
     return [...pending, ...passing, ...failing]
   }
 
+  async getAllRequiredChecks(branch: string, pr: { protectionRequiredChecks: string[] }): Promise<Set<string>> {
+    const fromRulesets = await this.getRulesetRequiredChecks(branch)
+    return new Set([...pr.protectionRequiredChecks, ...fromRulesets])
+  }
+
   async getRulesetRequiredChecks(branch: string): Promise<string[]> {
     const r = await this.gitOps.getRepo()
     try {

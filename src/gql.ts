@@ -12,7 +12,7 @@ export interface CurrentPrInfo {
   mergeabilityStatus: MergeabilityStatus
   url: string
   openUrl: string
-  requiredChecks: string[]
+  protectionRequiredChecks: string[]
   lastCommit?: {
     message: string
     abbreviatedOid?: string
@@ -201,7 +201,7 @@ export class GraphqlOps {
 
     const mainBranch = await this.gitOps.mainBranch()
     const protectionRules = repository?.branchProtectionRules?.nodes ?? []
-    const requiredChecks = protectionRules
+    const protectionRequiredChecks = protectionRules
       .filter(rule => rule.requiresStatusChecks && rule.matchingRefs.nodes.some(ref => ref.name === mainBranch))
       .flatMap(rule => rule.requiredStatusCheckContexts)
 
@@ -222,7 +222,7 @@ export class GraphqlOps {
       mergeabilityStatus,
       url,
       openUrl,
-      requiredChecks,
+      protectionRequiredChecks,
       lastCommit: commit && {
         message: commit?.message,
         abbreviatedOid: commit?.abbreviatedOid,
