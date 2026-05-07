@@ -78,9 +78,10 @@ export class GithubOps {
         .flatMap(rule => rule.parameters?.required_status_checks ?? [])
         .map(c => c.context)
     } catch (err) {
-      // Token may lack the scope to read rulesets, or the host may be an older GHE without this endpoint.
-      // Degrade to "no ruleset-derived required checks" so callers fall back to branchProtectionRules only.
-      logger.silly(`getRulesetRequiredChecks failed: ${err}`)
+      const status = (err as { status?: number })?.status
+      if (status !== 404) {
+        logger.warn(`Failed to fetch ruleset required checks (status=${status ?? 'unknown'}): ${err}`)
+      }
       return []
     }
   }
