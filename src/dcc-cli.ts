@@ -369,6 +369,53 @@ async function checkoutPr(a: { prNumber: number }) {
   print(`Branch: ${branchName}`)
 }
 
+function expandHome(p: string): string {
+  if (p === '~') {
+    return os.homedir()
+  }
+  if (p.startsWith('~/')) {
+    return path.join(os.homedir(), p.slice(2))
+  }
+  return p
+}
+
+async function cloneRepo(ownerRepo: string) {
+  if (!parsed.checkoutRoot) {
+    print(`Cloning a repo requires a "checkoutRoot" entry in ${confFile}.`)
+    print(`Add one, for example:`)
+    print(`  "checkoutRoot": "~/code"`)
+    print(`Repos are then cloned to <checkoutRoot>/<owner>/<repo>.`)
+    return
+  }
+
+  const [owner, name] = ownerRepo.split('/')
+  const targetDir = path.resolve(expandHome(parsed.checkoutRoot), owner, name)
+
+  if (fs.existsSync(targetDir)) {
+    print(`Cannot clone ${ownerRepo}: ${targetDir} already exists`)
+    return
+  }
+
+  fs.mkdirSync(path.dirname(targetDir), { recursive: true })
+
+  print(`Cloning ${ownerRepo} into ${targetDir}`)
+  await gitOps.clone(`git@github.com:${owner}/${name}.git`, targetDir)
+  print(`Done. cd ${targetDir} to start working`)
+}
+
+async function checkout(a: { target: string }) {
+  const target = a.target.trim().replace(/\.git$/, '')
+  if (/^\d+$/.test(target)) {
+    await checkoutPr({ prNumber: Number(target) })
+    return
+  }
+  if (/^[^/\s]+\/[^/\s]+$/.test(target)) {
+    await cloneRepo(target)
+    return
+  }
+  print(`'${a.target}' is neither a PR number nor an owner/repo (e.g. "dcc co 123" or "dcc co acme/widgets")`)
+}
+
 function shouldNeverHappen(_n: never): never {
   throw new Error(`Never goign to happen at runtime`)
 }
@@ -491,15 +538,15 @@ yargs(hideBin(process.argv))
     launch(close),
   )
   .command(
-    ['checkout <pr-number>', 'co <pr-number>'],
-    'Checkout the branch of a PR by its number',
+    ['checkout <target>', 'co <target>'],
+    'Checkout a PR by number, or clone a repo given as owner/repo',
     yargs =>
-      yargs.positional('pr-number', {
-        type: 'number',
-        describe: 'The PR number to checkout',
+      yargs.positional('target', {
+        type: 'string',
+        describe: 'A PR number (e.g. 123) to checkout, or an owner/repo (e.g. acme/widgets) to clone',
         demandOption: true,
       }),
-    launch((a: { 'pr-number': number }) => checkoutPr({ prNumber: a['pr-number'] })),
+    launch((a: { target: string }) => checkout(a)),
   )
   .strict()
   .help()
