@@ -369,6 +369,67 @@ async function checkoutPr(a: { prNumber: number }) {
   print(`Branch: ${branchName}`)
 }
 
+function expandHome(p: string): string {
+  if (p === '~') {
+    return os.homedir()
+  }
+  if (p.startsWith('~/')) {
+    return path.join(os.homedir(), p.slice(2))
+  }
+  if (p.startsWith('~')) {
+    throw new Error(`checkoutRoot "${p}" is not supported; use an absolute path or ~/...`)
+  }
+  if (!path.isAbsolute(p)) {
+    throw new Error(`checkoutRoot "${p}" must be an absolute path or start with ~/`)
+  }
+  return p
+}
+
+async function cloneRepo(ownerRepo: string) {
+  if (!parsed.checkoutRoot) {
+    print(`Cloning a repo requires a "checkoutRoot" entry in ${confFile}.`)
+    print(`Add one, for example:`)
+    print(`  "checkoutRoot": "~/code"`)
+    print(`Repos are then cloned to <checkoutRoot>/<owner>/<repo>.`)
+    process.exitCode = 1
+    return
+  }
+
+  const [owner, name] = ownerRepo.split('/')
+  const targetDir = path.resolve(expandHome(parsed.checkoutRoot), owner, name)
+
+  if (fs.existsSync(targetDir)) {
+    print(`Cannot clone ${ownerRepo}: ${targetDir} already exists`)
+    process.exitCode = 1
+    return
+  }
+
+  print(`Cloning ${ownerRepo} into ${targetDir}`)
+  await gitOps.clone(`git@github.com:${owner}/${name}.git`, targetDir)
+  print(`Done. cd ${targetDir} to start working`)
+}
+
+async function checkout(a: { target: string }) {
+  const target = a.target.trim()
+  if (/^\d+$/.test(target)) {
+    await checkoutPr({ prNumber: Number(target) })
+    return
+  }
+  if (/^[^/\s]+\/[^/\s]+$/.test(target)) {
+    const repo = target.replace(/\.git$/, '')
+    const segs = repo.split('/')
+    if (segs.length !== 2 || segs.some(s => s === '' || /^\.+$/.test(s))) {
+      print(`'${a.target}' has an invalid owner/repo segment`)
+      process.exitCode = 1
+      return
+    }
+    await cloneRepo(repo)
+    return
+  }
+  print(`'${a.target}' is neither a PR number nor an owner/repo (e.g. "dcc co 123" or "dcc co acme/widgets")`)
+  process.exitCode = 1
+}
+
 function shouldNeverHappen(_n: never): never {
   throw new Error(`Never goign to happen at runtime`)
 }
@@ -491,15 +552,15 @@ yargs(hideBin(process.argv))
     launch(close),
   )
   .command(
-    ['checkout <pr-number>', 'co <pr-number>'],
-    'Checkout the branch of a PR by its number',
+    ['checkout <target>', 'co <target>'],
+    'Checkout a PR by number, or clone a repo given as owner/repo',
     yargs =>
-      yargs.positional('pr-number', {
-        type: 'number',
-        describe: 'The PR number to checkout',
+      yargs.positional('target', {
+        type: 'string',
+        describe: 'A PR number (e.g. 123) to checkout, or an owner/repo (e.g. acme/widgets) to clone',
         demandOption: true,
       }),
-    launch((a: { 'pr-number': number }) => checkoutPr({ prNumber: a['pr-number'] })),
+    launch((a: { target: string }) => checkout(a)),
   )
   .strict()
   .help()

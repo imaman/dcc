@@ -179,6 +179,10 @@ export class GitOps {
     await this.git.checkout(branchName)
   }
 
+  async clone(repoUrl: string, targetDir: string): Promise<void> {
+    await execa('git', ['clone', '--filter=blob:none', repoUrl, targetDir], { stdio: 'inherit' })
+  }
+
   async createBranch(branchName: string, baselineRef: string): Promise<void> {
     await this.git.checkoutBranch(branchName, baselineRef)
   }

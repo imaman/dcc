@@ -7,6 +7,7 @@ export const DccConfig = z.object({
     .array()
     .optional(),
   openOn: z.enum(['github', 'graphite']).optional(),
+  checkoutRoot: z.string().optional(),
 })
 
 // eslint-disable-next-line no-redeclare
