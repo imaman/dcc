@@ -376,6 +376,9 @@ function expandHome(p: string): string {
   if (p.startsWith('~/')) {
     return path.join(os.homedir(), p.slice(2))
   }
+  if (p.startsWith('~')) {
+    throw new Error(`checkoutRoot "${p}" is not supported; use an absolute path or ~/...`)
+  }
   return p
 }
 
@@ -396,21 +399,24 @@ async function cloneRepo(ownerRepo: string) {
     return
   }
 
-  fs.mkdirSync(path.dirname(targetDir), { recursive: true })
-
   print(`Cloning ${ownerRepo} into ${targetDir}`)
   await gitOps.clone(`git@github.com:${owner}/${name}.git`, targetDir)
   print(`Done. cd ${targetDir} to start working`)
 }
 
 async function checkout(a: { target: string }) {
-  const target = a.target.trim().replace(/\.git$/, '')
+  const target = a.target.trim()
   if (/^\d+$/.test(target)) {
     await checkoutPr({ prNumber: Number(target) })
     return
   }
   if (/^[^/\s]+\/[^/\s]+$/.test(target)) {
-    await cloneRepo(target)
+    const repo = target.replace(/\.git$/, '')
+    if (repo.split('/').some(s => /^\.+$/.test(s))) {
+      print(`'${a.target}' has an invalid owner/repo segment`)
+      return
+    }
+    await cloneRepo(repo)
     return
   }
   print(`'${a.target}' is neither a PR number nor an owner/repo (e.g. "dcc co 123" or "dcc co acme/widgets")`)
