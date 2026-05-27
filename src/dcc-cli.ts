@@ -379,6 +379,9 @@ function expandHome(p: string): string {
   if (p.startsWith('~')) {
     throw new Error(`checkoutRoot "${p}" is not supported; use an absolute path or ~/...`)
   }
+  if (!path.isAbsolute(p)) {
+    throw new Error(`checkoutRoot "${p}" must be an absolute path or start with ~/`)
+  }
   return p
 }
 
@@ -388,6 +391,7 @@ async function cloneRepo(ownerRepo: string) {
     print(`Add one, for example:`)
     print(`  "checkoutRoot": "~/code"`)
     print(`Repos are then cloned to <checkoutRoot>/<owner>/<repo>.`)
+    process.exitCode = 1
     return
   }
 
@@ -396,6 +400,7 @@ async function cloneRepo(ownerRepo: string) {
 
   if (fs.existsSync(targetDir)) {
     print(`Cannot clone ${ownerRepo}: ${targetDir} already exists`)
+    process.exitCode = 1
     return
   }
 
@@ -412,14 +417,17 @@ async function checkout(a: { target: string }) {
   }
   if (/^[^/\s]+\/[^/\s]+$/.test(target)) {
     const repo = target.replace(/\.git$/, '')
-    if (repo.split('/').some(s => /^\.+$/.test(s))) {
+    const segs = repo.split('/')
+    if (segs.length !== 2 || segs.some(s => s === '' || /^\.+$/.test(s))) {
       print(`'${a.target}' has an invalid owner/repo segment`)
+      process.exitCode = 1
       return
     }
     await cloneRepo(repo)
     return
   }
   print(`'${a.target}' is neither a PR number nor an owner/repo (e.g. "dcc co 123" or "dcc co acme/widgets")`)
+  process.exitCode = 1
 }
 
 function shouldNeverHappen(_n: never): never {
