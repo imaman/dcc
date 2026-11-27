@@ -121,17 +121,12 @@ export class GithubOps {
       issueNumber = resp.data.number
       logger.info(`PR #${issueNumber} created\n${resp.data.html_url}`)
     } catch (err) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const x = err as any
-      const data = x?.response?.data
-      const rawErrors = Array.isArray(x?.errors) ? x.errors : Array.isArray(data?.errors) ? data.errors : []
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const errors: any[] = rawErrors
+      const errors = extractGithubErrors(err)
       const alreadyExist = errors.some(
-        e => e?.['resource'] === 'PullRequest' && String(e?.['message']).includes('A pull request already exists'),
+        e => e.resource === 'PullRequest' && String(e.message).includes('A pull request already exists'),
       )
       if (!alreadyExist) {
-        throw new Error(`Failed to create PR: ${describeGithubError(x, errors)}`)
+        throw new Error(`Failed to create PR: ${describeGithubError(err, errors)}`)
       }
 
       logger.info('PR already exists')
@@ -154,12 +149,27 @@ export class GithubOps {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function describeGithubError(x: any, errors: any[]): string {
-  const data = x?.response?.data
-  const message = String(data?.message ?? x?.message ?? x)
-  const details = errors
-    .map(e => (typeof e === 'string' ? e : e?.['message'] ?? e?.['code'] ?? JSON.stringify(e)))
-    .filter(Boolean)
-  return details.length > 0 ? `${message} — ${details.join('; ')}` : message
+type GithubErrorDetail = { resource?: unknown; message?: unknown; code?: unknown }
+
+type GithubRequestError = {
+  message?: unknown
+  errors?: unknown
+  response?: { data?: { message?: unknown; errors?: unknown } }
+}
+
+function extractGithubErrors(err: unknown): GithubErrorDetail[] {
+  const x = err as GithubRequestError | undefined
+  const raw = Array.isArray(x?.errors)
+    ? x.errors
+    : Array.isArray(x?.response?.data?.errors)
+    ? x.response.data.errors
+    : []
+  return raw.map((e: unknown) => (typeof e === 'object' && e !== null ? e : { message: e }))
+}
+
+function describeGithubError(err: unknown, errors: GithubErrorDetail[]): string {
+  const x = err as GithubRequestError | undefined
+  const message = String(x?.response?.data?.message ?? x?.message ?? err)
+  const details = errors.map(e => String(e.message ?? e.code ?? JSON.stringify(e))).filter(Boolean)
+  return details.length > 0 ? `${message}: ${details.join('; ')}` : message
 }
