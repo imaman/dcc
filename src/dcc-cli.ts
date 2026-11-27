@@ -232,10 +232,14 @@ async function push(args: { title?: string; submit?: boolean }) {
   if (currentPr) {
     await githubOps.updatePrTitle(currentPr.number, args.title)
   } else {
-    const base = await gitOps.mainBranch()
-    const ahead = await gitOps.countCommitsAhead(base)
-    if (ahead === 0) {
-      throw new Error(`Cannot create a PR: no commits between ${base} and the current branch`)
+    const mainBranch = await gitOps.mainBranch()
+    const [baselineCommit, branch] = await Promise.all([
+      gitOps.findBaselineCommit(`origin/${mainBranch}`),
+      gitOps.getBranch(),
+    ])
+    // HEAD is an ancestor of (or equal to) origin/main => the branch has no commits of its own
+    if (baselineCommit.startsWith(branch.commit)) {
+      throw new Error(`Cannot create a PR: no commits between ${mainBranch} and ${branch.name}`)
     }
     const prNumber = await githubOps.createPr(args.title)
     const branchName = `pr/${prNumber}`
