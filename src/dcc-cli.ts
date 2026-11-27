@@ -232,6 +232,11 @@ async function push(args: { title?: string; submit?: boolean }) {
   if (currentPr) {
     await githubOps.updatePrTitle(currentPr.number, args.title)
   } else {
+    const base = await gitOps.mainBranch()
+    const ahead = await gitOps.countCommitsAhead(base)
+    if (ahead === 0) {
+      throw new Error(`Cannot create a PR: no commits between ${base} and the current branch`)
+    }
     const prNumber = await githubOps.createPr(args.title)
     const branchName = `pr/${prNumber}`
     await gitOps.renameBranch(branchName)

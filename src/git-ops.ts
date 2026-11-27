@@ -196,6 +196,18 @@ export class GitOps {
     return diffSummary.files.map(it => it.file)
   }
 
+  /**
+   * Returns the number of commits reachable from HEAD but not from origin/<baseBranch>.
+   */
+  async countCommitsAhead(baseBranch: string): Promise<number> {
+    const out = await this.git.raw(['rev-list', '--count', `origin/${baseBranch}..HEAD`])
+    const n = Number(out.trim())
+    if (!Number.isInteger(n)) {
+      throw new Error(`Unexpected output from git rev-list --count: ${out}`)
+    }
+    return n
+  }
+
   async findBaselineCommit(mainBranch: string): Promise<string> {
     const out = await this.git.raw(['merge-base', mainBranch, 'HEAD'])
     const lines = out

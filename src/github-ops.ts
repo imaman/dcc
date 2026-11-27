@@ -123,14 +123,15 @@ export class GithubOps {
     } catch (err) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const x = err as any
-      const errors = [...x['errors']]
-      const alreadyExist = Boolean(
-        errors.find(
-          e => e['resource'] === 'PullRequest' && String(e['message']).includes('A pull request already exists'),
-        ),
+      const data = x?.response?.data
+      const rawErrors = Array.isArray(x?.errors) ? x.errors : Array.isArray(data?.errors) ? data.errors : []
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errors: any[] = rawErrors
+      const alreadyExist = errors.some(
+        e => e?.['resource'] === 'PullRequest' && String(e?.['message']).includes('A pull request already exists'),
       )
       if (!alreadyExist) {
-        throw new Error(`Failed to create PR\n${JSON.stringify(x, null, 2)}`)
+        throw new Error(`Failed to create PR: ${describeGithubError(x, errors)}`)
       }
 
       logger.info('PR already exists')
@@ -151,4 +152,14 @@ export class GithubOps {
 
     return issueNumber
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function describeGithubError(x: any, errors: any[]): string {
+  const data = x?.response?.data
+  const message = String(data?.message ?? x?.message ?? x)
+  const details = errors
+    .map(e => (typeof e === 'string' ? e : e?.['message'] ?? e?.['code'] ?? JSON.stringify(e)))
+    .filter(Boolean)
+  return details.length > 0 ? `${message} — ${details.join('; ')}` : message
 }
